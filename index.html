@@ -527,7 +527,7 @@
     </script>
     <div class="inputfield">
         <h1>Biology</h1>
-        <p>Enter an entryid</p>
+        <p>Enter a name (eg Bacteria or Concha Renibus</p>
         <input type="text">
         <button onclick="submitentry()">Submit</button>
         <p class="nosuchsystem"></p>
@@ -615,7 +615,7 @@
 
         function getEntryInfo(entryid) {
             if (entryid === undefined || !isNaN(entryid)) {
-                document.querySelector(".nosuchsystem").innerText = "No such system found"
+                document.querySelector(".nosuchsystem").innerText = "No such biology found"
                 document.querySelector(".nosuchsystem").style.display = "block"
             }
             else {
