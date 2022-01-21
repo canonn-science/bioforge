@@ -3,6 +3,128 @@
 
 <head>
     <!--script src="svg-inject.min.js"></script-->
+    <style>
+        .codex_header {
+            grid-area: header;
+        }
+
+        .codex_region {
+            grid-area: region;
+        }
+
+        .codex_image {
+            grid-area: image;
+        }
+
+        .codex_gravity {
+            grid-area: gravity;
+        }
+
+        .codex_gravity_value {
+            grid-area: gravity_value;
+        }
+
+        .codex_distance {
+            grid-area: distance;
+        }
+
+        .codex_distance_value {
+            grid-area: distance_value;
+        }
+
+        .codex_temperature {
+            grid-area: temperature;
+        }
+
+        .codex_temperature_value {
+            grid-area: temperature_value;
+        }
+
+        .codex_pressure {
+            grid-area: pressure;
+        }
+
+        .codex_pressure_value {
+            grid-area: pressure_value;
+        }
+
+        .codex_bodies {
+            grid-area: bodies;
+        }
+
+        .codex_body_list {
+            grid-area: body_list;
+        }
+
+        .codex_primary {
+            grid-area: primary;
+        }
+
+        .codex_primary_list {
+            grid-area: primary_list;
+        }
+
+        .codex_local {
+            grid-area: local;
+        }
+
+        .codex_local_list {
+            grid-area: local_list;
+        }
+
+        .codex_materials {
+            grid-area: materials;
+        }
+
+        .codex_material_list {
+            grid-area: material_list;
+        }
+
+        .codex_composition {
+            grid-area: composition;
+        }
+
+        .codex_composition_list {
+            grid-area: composition_list;
+        }
+
+        .codex_system_contents {
+            grid-area: system_contents;
+        }
+
+        .codex_system_contents_list {
+            grid-area: system_contents_list;
+        }
+
+        .codex_price {
+            grid-area: price;
+        }
+
+        .codex_price_value {
+            grid-area: price_value;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-areas:
+                'header header header header header header'
+                'region distance distance_value distance_value distance_value distance_value'
+                'region gravity gravity_value gravity_value gravity_value gravity_value'
+                'region temperature temperature_value temperature_value temperature_value temperature_value'
+                'region pressure pressure_value pressure_value pressure_value pressure_value'
+            ;
+            grid-gap: 5px;
+            background-color: #505355;
+            padding: 5px;
+        }
+
+        .grid-container>div {
+            background-color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            padding: 5px 0;
+            font-size: 20px;
+        }
+    </style>
 </head>
 
 <body>
@@ -10,10 +132,33 @@
 
 
     <template id="row">
-        <tr>
-            <td>Details</td>
-            <td></td>
-        </tr>
+        <div class="grid-container">
+            <div class="codex_header"></div>
+            <div class="codex_region"></div>
+            <!--div class="codex_image">XX</div-->
+            <div class="codex_gravity">Gravity</div>
+            <div class="codex_gravity_value">XX</div>
+            <div class="codex_distance">Distance</div>
+            <div class="codex_distance_value">XX</div>
+            <div class="codex_temperature">Temperature</div>
+            <div class="codex_temperature_value">XX</div>
+            <div class="codex_pressure">Pressure</div>
+            <div class="codex_pressure_value">XX</div>
+            <!--div class="codex_bodies">XX</div>
+            <div class="codex_body_list">XX</div>
+            <div class="codex_primary">XX</div>
+            <div class="codex_primary_list">XX</div>
+            <div class="codex_local">XX</div>
+            <div class="codex_local_list">XX</div>
+            <div class="codex_materials">XX</div>
+            <div class="codex_material_list">XX</div>
+            <div class="codex_composition">XX</div>
+            <div class="codex_composition_list">XX</div>
+            <div class="codex_system_contents">XX</div>
+            <div class="codex_system_contents_list">XX</div>
+            <div class="codex_price">XX</div>
+            <div class="codex_price_value">XX</div-->
+        </div>
     </template>
 
 
@@ -39,7 +184,7 @@
                 .borderlines {
                     stroke-linecap: round;
                     stroke-linejoin: round;
-                    stroke: #402000;
+                    stroke: #9b5004;
                     stroke-width: 5px;
                     fill: none;
                 }
@@ -532,11 +677,12 @@
         <button onclick="submitentry()">Submit</button>
         <p class="nosuchsystem"></p>
 
-        <table id="container">
-            <tbody>
-                <!-- existing data could optionally be included here -->
-            </tbody>
-        </table>
+        <div id="container">
+            <!-- content goes here-->
+        </div>
+
+
+
 
     </div>
     <script>
@@ -628,7 +774,7 @@
         }
         function makePage(entry) {
             if ('content' in document.createElement('template')) {
-                var tbody = document.querySelector("tbody");
+                var tbody = document.querySelector("#container");
 
                 var regionmap = document.querySelector('#map');
                 var row = document.querySelector('#row');
@@ -643,17 +789,29 @@
                     r = entry[key].regions;
                     r.forEach(function (x) {
                         id = regions[x];
-                        console.log(x)
-                        console.log(id)
+
                         var region = regionclone.querySelector(id)
 
                         region.className.baseVal = 'region_selected';
 
                     });
 
-                    var td = rowclone.querySelectorAll("td");
-                    td[0].textContent = entry[key]["name"];
-                    td[1].appendChild(regionclone);
+                    console.log(rowclone)
+                    var header = rowclone.querySelector(".grid-container .codex_header");
+                    header.textContent = entry[key]["name"];
+
+                    var distance = rowclone.querySelector(".grid-container .codex_distance_value");
+                    distance.textContent = entry[key]["mind"] + " - " + value["maxd"]
+                    var gravity = rowclone.querySelector(".grid-container .codex_gravity_value");
+                    gravity.textContent = Number.parseFloat(entry[key]["ming"]).toPrecision(4) + " - " + Number.parseFloat(value["maxg"]).toPrecision(4)
+                    var temp = rowclone.querySelector(".grid-container .codex_temperature_value");
+                    temp.textContent = Number.parseFloat(entry[key]["mint"]).toPrecision(4) + " - " + Number.parseFloat(value["maxt"]).toPrecision(4)
+                    var pressure = rowclone.querySelector(".grid-container .codex_pressure_value");
+                    pressure.textContent = Number.parseFloat(entry[key]["minp"]).toPrecision(4) + " - " + Number.parseFloat(value["maxp"]).toPrecision(4)
+
+                    var region = rowclone.querySelector(".grid-container .codex_region");
+                    region.textContent = ""
+                    region.appendChild(regionclone);
                     tbody.appendChild(rowclone);
                 }
 
