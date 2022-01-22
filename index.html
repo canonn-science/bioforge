@@ -2,6 +2,12 @@
 <html>
 
 <head>
+    <!--link rel="stylesheet" href="site.css"-->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+
     <!--script src="svg-inject.min.js"></script-->
     <style>
         .codex_header {
@@ -10,6 +16,8 @@
 
         .codex_region {
             grid-area: region;
+            background: black;
+            color: black;
         }
 
         .codex_image {
@@ -114,13 +122,56 @@
                 'region pressure pressure_value pressure_value pressure_value pressure_value'
             ;
             grid-gap: 5px;
-            background-color: #505355;
+            background-color: black;
+            opacity: 0.78;
             padding: 5px;
         }
 
         .grid-container>div {
-            background-color: rgba(255, 255, 255, 0.8);
-            text-align: center;
+            background-color: black;
+            text-align: centre;
+            padding: 5px 0;
+            font-size: 20px;
+
+        }
+
+        .header_title {
+            grid-area: header_title;
+            text-align: left;
+            align-content: flex-start;
+        }
+
+
+        .header_logo {
+            grid-area: header_logo;
+        }
+
+        .header_desc {
+            grid-area: header_desc;
+            align-content: flex-start;
+        }
+
+        .header-container {
+            display: grid;
+            grid-template-areas:
+                'header_title header_title header_title header_logo header_logo header_logo'
+                'header_desc header_desc header_desc header_logo header_logo header_logo'
+                'header_desc header_desc header_desc header_logo header_logo header_logo'
+                'header_desc header_desc header_desc header_logo header_logo header_logo'
+                'header_desc header_desc header_desc header_logo header_logo header_logo'
+                'header_desc header_desc header_desc header_logo header_logo header_logo'
+
+
+            ;
+            grid-gap: 5px;
+            background-color: black;
+            opacity: 0.8;
+            padding: 5px;
+        }
+
+        .header-container>div {
+            background-color: black;
+            text-align: left;
             padding: 5px 0;
             font-size: 20px;
         }
@@ -129,6 +180,22 @@
 
 <body>
 
+
+    <div class="header-container">
+        <div class="header_title">
+            <h1>Bioforge</h1>
+            <div class="inputfield">
+                <p>Enter a name (eg Bacterium or Concha Renibus)</p>
+                <input type="text">
+                <button onclick="submitentry()">Submit</button>
+                <p class="nosuchsystem"></p>
+            </div>
+        </div>
+        <div class="codex_logo"><img id="logo" src="img/Canonn-Logo_transparent_50_f1.gif" width="300"></div>
+        <div class="header_desc">
+
+        </div>
+    </div>
 
 
     <template id="row">
@@ -165,7 +232,7 @@
     <template id="map">
 
         <svg xmlns="http://www.w3.org/2000/svg" width="250px" height="250px" viewBox="0 0 2048 2048"
-            style="background-color: #101010" id="galaxy">
+            style="background-color: black" id="galaxy">
             <style>
                 .region {
                     stroke: orange;
@@ -670,16 +737,11 @@
             document.title = "Biology Statistics - " + trimmedsysname
         }
     </script>
-    <div class="inputfield">
-        <h1>Biology</h1>
-        <p>Enter a name (eg Bacteria or Concha Renibus)</p>
-        <input type="text">
-        <button onclick="submitentry()">Submit</button>
-        <p class="nosuchsystem"></p>
 
-        <div id="container">
-            <!-- content goes here-->
-        </div>
+
+    <div id="container">
+        <!-- content goes here-->
+    </div>
 
 
 
@@ -760,6 +822,7 @@
 
 
         function getEntryInfo(entryid) {
+            document.getElementById("logo").src = "img/Canonn-Logo_transparent_50.gif";
             if (entryid === undefined || !isNaN(entryid)) {
                 document.querySelector(".nosuchsystem").innerText = "No such biology found"
                 document.querySelector(".nosuchsystem").style.display = "block"
@@ -769,6 +832,7 @@
                 fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/biostats/" + entryid)
                     .then(response => response.json())
                     .then(data => makePage(data))
+
             }
 
         }
@@ -819,8 +883,10 @@
                 document.querySelector(".nosuchsystem").innerText = "Sorry you need a modern browser"
                 document.querySelector(".nosuchsystem").style.display = "block"
             }
+            document.getElementById("logo").src = "img/Canonn-Logo_transparent_50_f1.gif";
         }
     </script>
+    <script src="assets/js/main.js"></script>
 </body>
 
 </html>
