@@ -204,13 +204,13 @@
             <div class="codex_region"></div>
             <!--div class="codex_image">XX</div-->
             <div class="codex_gravity">Gravity</div>
-            <div class="codex_gravity_value">XX</div>
+            <div class="codex_gravity_value">n/a</div>
             <div class="codex_distance">Distance</div>
-            <div class="codex_distance_value">XX</div>
+            <div class="codex_distance_value">n/a</div>
             <div class="codex_temperature">Temperature</div>
-            <div class="codex_temperature_value">XX</div>
+            <div class="codex_temperature_value">n/a</div>
             <div class="codex_pressure">Pressure</div>
-            <div class="codex_pressure_value">XX</div>
+            <div class="codex_pressure_value">n/a</div>
             <!--div class="codex_bodies">XX</div>
             <div class="codex_body_list">XX</div>
             <div class="codex_primary">XX</div>
@@ -1001,16 +1001,20 @@
                     console.log(rowclone)
                     var header = rowclone.querySelector(".grid-container .codex_header");
                     header.textContent = entry[key]["name"];
+                    hud_category = entry[key]["hud_category"]
 
-                    var distance = rowclone.querySelector(".grid-container .codex_distance_value");
-                    distance.textContent = entry[key]["mind"] + " - " + value["maxd"]
-                    var gravity = rowclone.querySelector(".grid-container .codex_gravity_value");
-                    gravity.textContent = Number.parseFloat(entry[key]["ming"]).toPrecision(4) + " - " + Number.parseFloat(value["maxg"]).toPrecision(4)
-                    var temp = rowclone.querySelector(".grid-container .codex_temperature_value");
-                    temp.textContent = Number.parseFloat(entry[key]["mint"]).toPrecision(4) + " - " + Number.parseFloat(value["maxt"]).toPrecision(4)
-                    var pressure = rowclone.querySelector(".grid-container .codex_pressure_value");
-                    pressure.textContent = Number.parseFloat(entry[key]["minp"]).toPrecision(4) + " - " + Number.parseFloat(value["maxp"]).toPrecision(4)
-
+                    const huds = ["Biology", "Guardian", "Thargoid"];
+                    console.log(value);
+                    if (huds.includes(hud_category)) {
+                        var distance = rowclone.querySelector(".grid-container .codex_distance_value");
+                        distance.textContent = entry[key]["mind"] + " - " + value["maxd"]
+                        var gravity = rowclone.querySelector(".grid-container .codex_gravity_value");
+                        gravity.textContent = Number.parseFloat(entry[key]["ming"]).toPrecision(4) + " - " + Number.parseFloat(value["maxg"]).toPrecision(4)
+                        var temp = rowclone.querySelector(".grid-container .codex_temperature_value");
+                        temp.textContent = Number.parseFloat(entry[key]["mint"]).toPrecision(4) + " - " + Number.parseFloat(value["maxt"]).toPrecision(4)
+                        var pressure = rowclone.querySelector(".grid-container .codex_pressure_value");
+                        pressure.textContent = Number.parseFloat(entry[key]["minp"]).toPrecision(4) + " - " + Number.parseFloat(value["maxp"]).toPrecision(4)
+                    }
                     var region = rowclone.querySelector(".grid-container .codex_region");
                     region.textContent = ""
                     region.appendChild(regionclone);
