@@ -136,6 +136,7 @@ input, select, textarea {
 		-ms-justify-content: center;
 		justify-content: center;
 		background-color: #000;
+		background-color: rgb(89, 89, 89);
 		padding: 6em 4em 4em 4em;
 	}
 
@@ -188,7 +189,8 @@ input, select, textarea {
 		transition: opacity 2s ease-in-out;
 		height: 100%;
 		left: 0;
-		opacity: 0.25;
+		/*opacity: 0.25*/;
+		opacity: 1;
 		position: fixed;
 		top: 0;
 		width: 100%;
