@@ -1436,7 +1436,7 @@
         }
 
         function makePage(entry) {
-            if ('content' in document.createElement('template')) {
+            if ('content' in document.createElement('template') || len(entry) == 0) {
                 var tbody = document.querySelector("#container");
 
                 var regionmap = document.querySelector('#map');
@@ -1480,7 +1480,7 @@
 
                         var distance = rowclone.querySelector(".grid-container .codex_distance_value");
                         distance.textContent = ""
-                        distance.appendChild(histogram(value["histograms"]["distance"], "Distance (ly)", value["mind"], value["maxd"]));
+                        distance.appendChild(histogram(value["histograms"]["distance"], "Distance (ls)", value["mind"], value["maxd"]));
 
                         var pressure = rowclone.querySelector(".grid-container .codex_pressure_value");
                         pressure.textContent = ""
