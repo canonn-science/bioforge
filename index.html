@@ -1457,7 +1457,7 @@
             var maxvalue = 0;
             Object.keys(data).map(function (key) {
                 if (data[key] > maxvalue) {
-                    console.log(data[key] + " " + maxvalue)
+
                     maxvalue = data[key]
                 }
             });
@@ -1477,11 +1477,11 @@
                         if (data[key]) {
                             value = data[key]
                             height = Math.round((value / maxvalue) * 50)
-                            console.log(key + " " + value + " height: " + height + " max" + maxvalue)
+
                         } else {
                             value = 0
                             height = 0
-                            console.log(key + " 0")
+
                         }
                         g1 = document.createElementNS("http://www.w3.org/2000/svg", "g",);
                         g2 = document.createElementNS("http://www.w3.org/2000/svg", "g",);
@@ -1532,7 +1532,7 @@
                         g2.appendChild(text);
                         svg.appendChild(g1);
                         svg.appendChild(g2);
-                        console.log(svg.innerHTML)
+
                         cols += 1;
                     });
                 });
@@ -1620,7 +1620,7 @@
             var maxvalue = 0;
             Object.keys(data).map(function (key) {
                 if (data[key] > maxvalue) {
-                    console.log(data[key] + " " + maxvalue)
+
                     maxvalue = data[key]
                 }
             });
@@ -1640,11 +1640,11 @@
                         if (data[key]) {
                             value = data[key]
                             height = Math.round((value / maxvalue) * 50)
-                            console.log(key + " " + value + " height: " + height + " max" + maxvalue)
+
                         } else {
                             value = 0
                             height = 0
-                            console.log(key + " 0")
+
                         }
                         g1 = document.createElementNS("http://www.w3.org/2000/svg", "g",);
                         g2 = document.createElementNS("http://www.w3.org/2000/svg", "g",);
@@ -1711,7 +1711,7 @@
                         g2.appendChild(text);
                         svg.appendChild(g1);
                         svg.appendChild(g2);
-                        console.log(svg.innerHTML)
+
                         cols += 1;
                     });
                 });
