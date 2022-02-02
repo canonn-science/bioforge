@@ -88,6 +88,14 @@
             grid-area: material_list;
         }
 
+        .codex_stellar_histogram {
+            grid-area: stellar_histogram;
+        }
+
+        .codex_planetary_histogram {
+            grid-area: planetary_histogram;
+        }
+
         .codex_composition {
             grid-area: composition;
         }
@@ -115,10 +123,11 @@
         .grid-container {
             display: grid;
             grid-template-areas:
-                'header header header header header'
-                'region distance_value gravity_value gravity_value gravity_value'
-                'region temperature_value pressure_value pressure_value pressure_value'
-                'material_list material_list material_list material_list material_list'
+                'header header header header header header'
+                'region distance_value gravity_value gravity_value gravity_value gravity_value'
+                'region temperature_value pressure_value pressure_value pressure_value pressure_value'
+                'material_list material_list material_list planetary_histogram planetary_histogram planetary_histogram'
+                'stellar_histogram stellar_histogram stellar_histogram stellar_histogram stellar_histogram stellar_histogram'
             ;
             grid-gap: 5px;
             background-color: black;
@@ -222,7 +231,9 @@
             <div class="codex_local">XX</div>
             <div class="codex_local_list">XX</div>
             <div class="codex_materials">XX</div-->
-            <div class="codex_material_list">XX</div>
+            <div class="codex_material_list">n/a</div>
+            <div class="codex_stellar_histogram"></div>
+            <div class="codex_planetary_histogram"></div>
             <!--div class="codex_composition">XX</div>
             <div class="codex_composition_list">XX</div>
             <div class="codex_system_contents">XX</div>
@@ -232,6 +243,11 @@
         </div><br> <br>
     </template>
 
+    <template id="blanksvg">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 2048" style="background-color: black"
+            class="codex_hist">
+        </svg>
+    </template>
 
     <template id="map">
 
@@ -881,7 +897,7 @@
 
                 .bar_g {
                     fill: lightgrey;
-                    height: 21px;
+
                     transition: fill .3s ease;
                     cursor: pointer;
                     font-family: Helvetica, sans-serif;
@@ -891,7 +907,7 @@
 
                 .bar_r {
                     fill: #ee5f5b;
-                    height: 21px;
+
                     transition: fill .3s ease;
                     cursor: pointer;
                     font-family: Helvetica, sans-serif;
@@ -901,7 +917,7 @@
 
                 .bar_s {
                     fill: #f89406;
-                    height: 21px;
+
                     transition: fill .3s ease;
                     cursor: pointer;
                     font-family: Helvetica, sans-serif;
@@ -911,7 +927,7 @@
 
                 .bar_c {
                     fill: #62c462;
-                    height: 21px;
+
                     transition: fill .3s ease;
                     cursor: pointer;
                     font-family: Helvetica, sans-serif;
@@ -921,7 +937,7 @@
 
                 .bar_v {
                     fill: #5bc0de;
-                    height: 21px;
+
                     transition: fill .3s ease;
                     cursor: pointer;
                     font-family: Helvetica, sans-serif;
@@ -931,7 +947,7 @@
 
                 .bar {
                     fill: #aaa;
-                    height: 21px;
+
                     transition: fill .3s ease;
                     cursor: pointer;
                     font-family: Helvetica, sans-serif;
@@ -1176,8 +1192,9 @@
             </g>
             <g id="gt_Zinc" class="bar_c">
                 <title id="t2_Zinc">0 Zinc</title>
-                <rect id="rZinc" x="503" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15" height="15"
-                    dominant-baseline="middle" text-anchor="middle" x="513" y="60" dy=".25em">Zn</text>
+                <rect id="rZinc" x="503" width="20" height="20" y="53" rx="3" ry="3"></rect>
+                <text width="15" height="15" dominant-baseline="middle" text-anchor="middle" x="513" y="60"
+                    dy=".25em">Zn</text>
             </g>
             <g id="g_Zirconium" class="bar_g">
                 <title id="t_Zirconium">0 Zirconium</title>
@@ -1210,7 +1227,7 @@
 
                 .bar_g {
                     fill: lightgrey;
-                    height: 21px;
+
                     transition: fill .3s ease;
                     cursor: pointer;
                     font-family: Helvetica, sans-serif;
@@ -1218,7 +1235,7 @@
 
                 .bar_s {
                     fill: #f89406;
-                    height: 21px;
+
                     transition: fill .3s ease;
                     cursor: pointer;
                     font-family: Helvetica, sans-serif;
@@ -1392,6 +1409,317 @@
 
         }
 
+        function planetary_histogram(rowclone, data, bodies) {
+
+            var target = rowclone.querySelector(".grid-container .codex_planetary_histogram");
+
+            scaffold = {
+                "Planets": {
+                    "Gas Giants": [
+                        { "name": "Class I gas giant", "tag": "G1" },
+                        { "name": "Class II gas giant", "tag": "G2" },
+                        { "name": "Class III gas giant", "tag": "G3" },
+                        { "name": "Class IV gas giant", "tag": "G4" },
+                        { "name": "Gas giant with ammonia-based life", "tag": "GA" },
+                        { "name": "Gas giant with water-based life", "tag": "GW" },
+                        { "name": "Helium gas giant", "tag": "HG" },
+                        { "name": "Helium-rich gas giant", "tag": "HR" },
+                        { "name": "Water giant", "tag": "WG" },
+                    ],
+                    "Worlds": [
+                        { "name": "Ammonia world", "tag": "AW" },
+                        { "name": "Earth-like world", "tag": "EW" },
+                        { "name": "Water world", "tag": "WW" },
+                    ],
+                    "Landable": [
+                        { "name": "High metal content world", "tag": "HM" },
+                        { "name": "Icy body", "tag": "IB" },
+                        { "name": "Metal-rich body", "tag": "MR" },
+                        { "name": "Rocky body", "tag": "RB" },
+                        { "name": "Rocky Ice world", "tag": "RI" },
+                    ]
+                }
+            }
+
+            //create the svg
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+            //viewBox="0 0 2048 2048" style="background-color: black"
+            //class="codex_hist">
+            svg.setAttribute("viewbox", "0 0 2048 2048");
+            svg.setAttribute("style", "background-color: black");
+            svg.setAttribute("width", "100%");
+            svg.setAttribute("height", "100px");
+            svg.setAttribute("class", "codex_hist");
+            svg.setAttribute("role", "img");
+
+            //get the maximum height of the chart
+            var maxvalue = 0;
+            Object.keys(data).map(function (key) {
+                if (data[key] > maxvalue) {
+                    console.log(data[key] + " " + maxvalue)
+                    maxvalue = data[key]
+                }
+            });
+
+            //
+
+            // we need to count the number of columns
+            var cols = 0;
+
+            Object.keys(scaffold).map(function (type) {
+                Object.keys(scaffold[type]).map(function (subtype) {
+                    scaffold[type][subtype].forEach(function (entry) {
+
+                        key = entry["name"];
+                        tag = entry["tag"];
+
+                        if (data[key]) {
+                            value = data[key]
+                            height = Math.round((value / maxvalue) * 50)
+                            console.log(key + " " + value + " height: " + height + " max" + maxvalue)
+                        } else {
+                            value = 0
+                            height = 0
+                            console.log(key + " 0")
+                        }
+                        g1 = document.createElementNS("http://www.w3.org/2000/svg", "g",);
+                        g2 = document.createElementNS("http://www.w3.org/2000/svg", "g",);
+                        rect = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
+                        title1 = document.createElementNS("http://www.w3.org/2000/svg", "title",);
+                        title2 = document.createElementNS("http://www.w3.org/2000/svg", "title",);
+                        label = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
+                        text = document.createElementNS("http://www.w3.org/2000/svg", "text",);
+
+                        if (bodies.includes(key)) {
+                            rect.setAttribute("class", "bar_s");
+                        } else {
+                            rect.setAttribute("class", "bar_g");
+                        }
+                        rect.setAttribute("rx", 3);
+                        rect.setAttribute("ry", 3);
+                        rect.setAttribute("x", cols * 31);
+                        rect.setAttribute("width", 30);
+                        rect.setAttribute("y", 50 - height);
+                        rect.setAttribute("height", height);
+                        title1.textContent = key + " " + value
+                        title2.textContent = key + " " + value
+
+
+                        label.setAttribute("class", "bar_s");
+                        label.setAttribute("rx", 3);
+                        label.setAttribute("ry", 3);
+                        label.setAttribute("x", cols * 31);
+                        label.setAttribute("width", 30);
+                        label.setAttribute("y", 52);
+                        label.setAttribute("height", 20);
+
+                        //<text width="15" height="15"
+                        //dominant-baseline="middle" text-anchor="middle" x="513" y="60" dy=".25em">Zn</text>
+                        text.setAttribute("width", 25)
+                        text.setAttribute("height", 25)
+                        text.setAttribute("dominant-baseline", "middle")
+                        text.setAttribute("text-anchor", "middle")
+                        text.setAttribute("x", (cols * 31) + 15);
+                        text.setAttribute("y", 60);
+                        text.setAttribute("dy", ".25em");
+                        text.textContent = tag
+
+                        g1.appendChild(rect);
+                        g1.appendChild(title1);
+                        g2.appendChild(label);
+                        g2.appendChild(title2);
+                        g2.appendChild(text);
+                        svg.appendChild(g1);
+                        svg.appendChild(g2);
+                        console.log(svg.innerHTML)
+                        cols += 1;
+                    });
+                });
+            });
+            target.appendChild(svg)
+        }
+
+
+        function stellar_histogram(rowclone, data, primarystars, localstars) {
+
+            var target = rowclone.querySelector(".grid-container .codex_stellar_histogram");
+
+            scaffold = {
+                "Stars": {
+                    "Giant": [
+                        { "name": "B (Blue-White super giant) Star", "tag": "B+" },
+                        { "name": "A (Blue-White super giant) Star", "tag": "A+" },
+                        { "name": "F (White super giant) Star", "tag": "F+" },
+                        { "name": "G (White-Yellow super giant) Star", "tag": "G+" },
+                        { "name": "K (Yellow-Orange giant) Star", "tag": "K+" },
+                        { "name": "M (Red super giant) Star", "tag": "M+" },
+                        { "name": "M (Red giant) Star", "tag": "M+" },
+                    ],
+                    "Scoopable": [
+                        { "name": "O (Blue-White) Star", "tag": "O" },
+                        { "name": "B (Blue-White) Star", "tag": "B" },
+                        { "name": "A (Blue-White) Star", "tag": "A" },
+                        { "name": "F (White) Star", "tag": "F" },
+                        { "name": "G (White-Yellow) Star", "tag": "G" },
+                        { "name": "K (Yellow-Orange) Star", "tag": "K" },
+                        { "name": "M (Red dwarf) Star", "tag": "M" },
+                    ],
+                    "Other": [
+                        { "name": "Supermassive Black Hole", "tag": "BH*" },
+                        { "name": "Black Hole", "tag": "BH" },
+                        { "name": "C Star", "tag": "C" },
+                        { "name": "CJ Star", "tag": "CJ" },
+                        { "name": "CN Star", "tag": "CN" },
+                        { "name": "Herbig Ae/Be Star", "tag": "He" },
+                        { "name": "MS-type Star", "tag": "MS" },
+                        { "name": "Neutron Star", "tag": "N" },
+                        { "name": "S-type Star", "tag": "S" },
+                        { "name": "T Tauri Star", "tag": "TTS" },
+                    ],
+                    "White Dwarfs": [
+                        { "name": "White Dwarf (D) Star", "tag": "D" },
+                        { "name": "White Dwarf (DA) Star", "tag": "DA" },
+                        { "name": "White Dwarf (DAB) Star", "tag": "DAB" },
+                        { "name": "White Dwarf (DAV) Star", "tag": "DAV" },
+                        { "name": "White Dwarf (DAZ) Star", "tag": "DAZ" },
+                        { "name": "White Dwarf (DB) Star", "tag": "DB" },
+                        { "name": "White Dwarf (DBV) Star", "tag": "DBV" },
+                        { "name": "White Dwarf (DBZ) Star", "tag": "DBZ" },
+                        { "name": "White Dwarf (DC) Star", "tag": "DC" },
+                        { "name": "White Dwarf (DCV) Star", "tag": "DCV" },
+                        { "name": "White Dwarf (DQ) Star", "tag": "DQ" },
+                    ],
+                    "Wolf-Rayet": [
+                        { "name": "Wolf-Rayet C Star", "tag": "WC" },
+                        { "name": "Wolf-Rayet N Star", "tag": "WN" },
+                        { "name": "Wolf-Rayet NC Star", "tag": "WNC" },
+                        { "name": "Wolf-Rayet O Star", "tag": "WO" },
+                        { "name": "Wolf-Rayet Star", "tag": "WR" },
+                    ],
+                    "Brown Dwarfs": [
+                        { "name": "L (Brown dwarf) Star", "tag": "L" },
+                        { "name": "T (Brown dwarf) Star", "tag": "T" },
+                        { "name": "Y (Brown dwarf) Star", "tag": "Y" },
+                    ]
+                }
+            }
+
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+            //viewBox="0 0 2048 2048" style="background-color: black"
+            //class="codex_hist">
+            svg.setAttribute("viewbox", "0 0 2048 2048");
+            svg.setAttribute("style", "background-color: black");
+            svg.setAttribute("width", "100%");
+            svg.setAttribute("height", "100px");
+            svg.setAttribute("class", "codex_hist");
+            svg.setAttribute("role", "img");
+
+            //get the maximum height of the chart
+            var maxvalue = 0;
+            Object.keys(data).map(function (key) {
+                if (data[key] > maxvalue) {
+                    console.log(data[key] + " " + maxvalue)
+                    maxvalue = data[key]
+                }
+            });
+
+            //
+
+            // we need to count the number of columns
+            var cols = 0;
+
+            Object.keys(scaffold).map(function (type) {
+                Object.keys(scaffold[type]).map(function (subtype) {
+                    scaffold[type][subtype].forEach(function (entry) {
+
+                        key = entry["name"];
+                        tag = entry["tag"];
+
+                        if (data[key]) {
+                            value = data[key]
+                            height = Math.round((value / maxvalue) * 50)
+                            console.log(key + " " + value + " height: " + height + " max" + maxvalue)
+                        } else {
+                            value = 0
+                            height = 0
+                            console.log(key + " 0")
+                        }
+                        g1 = document.createElementNS("http://www.w3.org/2000/svg", "g",);
+                        g2 = document.createElementNS("http://www.w3.org/2000/svg", "g",);
+                        rect = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
+                        title1 = document.createElementNS("http://www.w3.org/2000/svg", "title",);
+                        title2 = document.createElementNS("http://www.w3.org/2000/svg", "title",);
+                        label = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
+                        text = document.createElementNS("http://www.w3.org/2000/svg", "text",);
+
+                        if (primarystars.includes(key) || localstars.includes(key)) {
+                            rect.setAttribute("class", "bar_s");
+                        } else {
+                            rect.setAttribute("class", "bar_g");
+                        }
+                        rect.setAttribute("rx", 3);
+                        rect.setAttribute("ry", 3);
+                        rect.setAttribute("x", cols * 31);
+                        rect.setAttribute("width", 30);
+                        rect.setAttribute("y", 50 - height);
+                        rect.setAttribute("height", height);
+
+
+
+                        title1.textContent = key + " " + value
+                        title2.textContent = key + " " + value
+
+                        if (primarystars.includes(key)) {
+                            title1.textContent = "Primary" + key + " " + value
+                            title2.textContent = "Primary" + key + " " + value
+                        }
+                        if (localstars.includes(key)) {
+                            title1.textContent = "Local " + key + " " + value
+                            title2.textContent = "Local " + key + " " + value
+                        }
+
+                        if (primarystars.includes(key) && localstars.includes(key)) {
+                            title1.textContent = "Primary & Local " + key + " " + value
+                            title2.textContent = "Primary & Local " + key + " " + value
+                        }
+
+                        label.setAttribute("class", "bar_s");
+                        label.setAttribute("rx", 3);
+                        label.setAttribute("ry", 3);
+                        label.setAttribute("x", cols * 31);
+                        label.setAttribute("width", 30);
+                        label.setAttribute("y", 52);
+                        label.setAttribute("height", 20);
+
+                        //<text width="15" height="15"
+                        //dominant-baseline="middle" text-anchor="middle" x="513" y="60" dy=".25em">Zn</text>
+                        text.setAttribute("width", 25)
+                        text.setAttribute("height", 25)
+                        text.setAttribute("dominant-baseline", "middle")
+                        text.setAttribute("text-anchor", "middle")
+                        text.setAttribute("x", (cols * 31) + 15);
+                        text.setAttribute("y", 60);
+                        text.setAttribute("dy", ".25em");
+                        text.textContent = tag
+
+                        g1.appendChild(rect);
+                        g1.appendChild(title1);
+                        g2.appendChild(label);
+                        g2.appendChild(title2);
+                        g2.appendChild(text);
+                        svg.appendChild(g1);
+                        svg.appendChild(g2);
+                        console.log(svg.innerHTML)
+                        cols += 1;
+                    });
+                });
+            });
+            target.appendChild(svg)
+
+        }
+
         function histogram(data, footer, tmin, tmax) {
             var template = document.querySelector('#histogram');
             var histogram = template.content.cloneNode(true);
@@ -1461,6 +1789,8 @@
 
                     });
 
+                    stellar_histogram(rowclone, value["histograms"]["system_bodies"], value["primaryStars"], value["localStars"])
+                    planetary_histogram(rowclone, value["histograms"]["system_bodies"], value["bodies"])
 
                     var header = rowclone.querySelector(".grid-container .codex_header");
                     header.textContent = entry[key]["name"];
