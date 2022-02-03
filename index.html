@@ -1491,6 +1491,12 @@
                         label = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
                         text = document.createElementNS("http://www.w3.org/2000/svg", "text",);
 
+                        if (value > 0) {
+                            label.setAttribute("class", "bar_s");
+                        } else {
+                            label.setAttribute("class", "bar_g");
+                        }
+
                         if (bodies.includes(key)) {
                             rect.setAttribute("class", "bar_s");
                         } else {
@@ -1502,6 +1508,8 @@
                             rect.setAttribute("class", "bar_r");
                         }
 
+
+
                         rect.setAttribute("rx", 3);
                         rect.setAttribute("ry", 3);
                         rect.setAttribute("x", cols * 31);
@@ -1512,7 +1520,7 @@
                         title2.textContent = key + " " + value
 
 
-                        label.setAttribute("class", "bar_s");
+
                         label.setAttribute("rx", 3);
                         label.setAttribute("ry", 3);
                         label.setAttribute("x", cols * 31);
@@ -1660,6 +1668,12 @@
                         label = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
                         text = document.createElementNS("http://www.w3.org/2000/svg", "text",);
 
+                        if (value > 0) {
+                            label.setAttribute("class", "bar_s");
+                        } else {
+                            label.setAttribute("class", "bar_g");
+                        }
+
                         if (primarystars.includes(key) || localstars.includes(key)) {
                             rect.setAttribute("class", "bar_s");
                         } else {
@@ -1697,7 +1711,7 @@
                             rect.setAttribute("class", "bar_r");
                         }
 
-                        label.setAttribute("class", "bar_s");
+
                         label.setAttribute("rx", 3);
                         label.setAttribute("ry", 3);
                         label.setAttribute("x", cols * 31);
@@ -1789,8 +1803,6 @@
                     var rowclone = row.content.cloneNode(true);
                     var matsclone = matschart.content.cloneNode(true);
 
-
-
                     r = entry[key].regions;
                     r.forEach(function (x) {
                         id = regions[x];
@@ -1801,8 +1813,17 @@
 
                     });
 
-                    stellar_histogram(rowclone, value["histograms"]["system_bodies"], value["primaryStars"], value["localStars"], value["systemBodyTypes"])
-                    planetary_histogram(rowclone, value["histograms"]["system_bodies"], value["bodies"], value["systemBodyTypes"])
+                    console.log("system stats")
+                    localstars = []
+                    if (value["localStars"]) {
+                        localstars = value["localStars"]
+                    }
+                    localbodies = []
+                    if (value["bodies"]) {
+                        localbodies = value["bodies"]
+                    }
+                    stellar_histogram(rowclone, value["histograms"]["system_bodies"], value["primaryStars"], localstars, value["systemBodyTypes"])
+                    planetary_histogram(rowclone, value["histograms"]["system_bodies"], localbodies, value["systemBodyTypes"])
 
                     var header = rowclone.querySelector(".grid-container .codex_header");
                     header.textContent = entry[key]["name"];
