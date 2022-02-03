@@ -1409,7 +1409,7 @@
 
         }
 
-        function planetary_histogram(rowclone, data, bodies) {
+        function planetary_histogram(rowclone, data, bodies, musthave) {
 
             var target = rowclone.querySelector(".grid-container .codex_planetary_histogram");
 
@@ -1496,6 +1496,12 @@
                         } else {
                             rect.setAttribute("class", "bar_g");
                         }
+                        if (musthave.includes(key)) {
+                            title1.textContent = "System must contain " + key + " " + value
+                            title2.textContent = "System must contain " + key + " " + value
+                            rect.setAttribute("class", "bar_r");
+                        }
+
                         rect.setAttribute("rx", 3);
                         rect.setAttribute("ry", 3);
                         rect.setAttribute("x", cols * 31);
@@ -1541,7 +1547,7 @@
         }
 
 
-        function stellar_histogram(rowclone, data, primarystars, localstars) {
+        function stellar_histogram(rowclone, data, primarystars, localstars, musthave) {
 
             var target = rowclone.querySelector(".grid-container .codex_stellar_histogram");
 
@@ -1685,6 +1691,12 @@
                             title2.textContent = "Primary & Local " + key + " " + value
                         }
 
+                        if (musthave.includes(key)) {
+                            title1.textContent = "System must contain " + key + " " + value
+                            title2.textContent = "System must contain " + key + " " + value
+                            rect.setAttribute("class", "bar_r");
+                        }
+
                         label.setAttribute("class", "bar_s");
                         label.setAttribute("rx", 3);
                         label.setAttribute("ry", 3);
@@ -1789,8 +1801,8 @@
 
                     });
 
-                    stellar_histogram(rowclone, value["histograms"]["system_bodies"], value["primaryStars"], value["localStars"])
-                    planetary_histogram(rowclone, value["histograms"]["system_bodies"], value["bodies"])
+                    stellar_histogram(rowclone, value["histograms"]["system_bodies"], value["primaryStars"], value["localStars"], value["systemBodyTypes"])
+                    planetary_histogram(rowclone, value["histograms"]["system_bodies"], value["bodies"], value["systemBodyTypes"])
 
                     var header = rowclone.querySelector(".grid-container .codex_header");
                     header.textContent = entry[key]["name"];
