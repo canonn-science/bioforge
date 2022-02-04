@@ -1556,7 +1556,7 @@
 
 
         function stellar_histogram(rowclone, data, primarystars, localstars, musthave) {
-
+            console.log("stellar_histogram")
             var target = rowclone.querySelector(".grid-container .codex_stellar_histogram");
 
             scaffold = {
@@ -1679,6 +1679,7 @@
                         } else {
                             rect.setAttribute("class", "bar_g");
                         }
+
                         rect.setAttribute("rx", 3);
                         rect.setAttribute("ry", 3);
                         rect.setAttribute("x", cols * 31);
@@ -1813,10 +1814,11 @@
 
                     });
 
-                    console.log("system stats")
+                    //console.log("system stats")
                     localstars = []
+
                     if (value["localStars"]) {
-                        localstars = value["localStars"]
+                        localstars = value["localStars"].toLocaleString()
                     }
                     localbodies = []
                     if (value["bodies"]) {
@@ -1826,6 +1828,10 @@
                     planetary_histogram(rowclone, value["histograms"]["system_bodies"], localbodies, value["systemBodyTypes"])
 
                     var header = rowclone.querySelector(".grid-container .codex_header");
+                    header.textContent = entry[key]["name"];
+                    if (entry[key]["reward"]) {
+                        header.textContent = entry[key]["name"] + " ($" + entry[key]["reward"] + ")";
+                    }
                     header.textContent = entry[key]["name"];
                     hud_category = entry[key]["hud_category"]
 
