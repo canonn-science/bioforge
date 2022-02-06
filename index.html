@@ -1830,7 +1830,7 @@
                     var header = rowclone.querySelector(".grid-container .codex_header");
                     header.textContent = entry[key]["name"];
                     if (entry[key]["reward"]) {
-                        header.textContent = entry[key]["name"] + " ($" + entry[key]["reward"] + ")";
+                        header.textContent = entry[key]["name"] + " ($" + entry[key]["reward"].toLocaleString() + ")";
                     }
 
                     hud_category = entry[key]["hud_category"]
