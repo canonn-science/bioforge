@@ -6,6 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="site.css" />
     <!--script src="https://code.jquery.com/jquery-3.3.1.min.js"></script-->
 
     <!--script src="svg-inject.min.js"></script-->
@@ -1516,8 +1517,6 @@
                         rect.setAttribute("width", 30);
                         rect.setAttribute("y", 50 - height);
                         rect.setAttribute("height", height);
-                        title1.textContent = key + " " + value
-                        title2.textContent = key + " " + value
 
 
 
@@ -1824,6 +1823,7 @@
                     if (value["bodies"]) {
                         localbodies = value["bodies"]
                     }
+
                     stellar_histogram(rowclone, value["histograms"]["system_bodies"], value["primaryStars"], localstars, value["systemBodyTypes"])
                     planetary_histogram(rowclone, value["histograms"]["system_bodies"], localbodies, value["systemBodyTypes"])
 
