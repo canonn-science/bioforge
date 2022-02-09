@@ -199,6 +199,7 @@
                 <button onclick="submitentry()">Submit</button>
                 <p class="nosuchsystem"></p>
             </div>
+            <div id="jsonlink"></div>
         </div>
         <div class="codex_logo"><img id="logo" src="img/Canonn-Logo_transparent_50_f1.gif" width="300"></div>
         <div class="header_desc">
@@ -1329,6 +1330,7 @@
             if (document.querySelector("input").value) {
                 const trimmedinput = document.querySelector("input").value.trim()
                 window.location.href = window.location.href.split('?')[0] + "?entryid=" + encodeURIComponent(trimmedinput)
+
             }
         }
         document.querySelector("input").addEventListener("keyup", function (event) {
@@ -1404,7 +1406,7 @@
                 console.log("fetching data")
                 fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/biostats/" + entryid)
                     .then(response => response.json())
-                    .then(data => makePage(data))
+                    .then(data => makePage(data, entryid))
 
             }
 
@@ -1789,7 +1791,11 @@
             return histogram;
         }
 
-        function makePage(entry) {
+        function makePage(entry, entryid) {
+
+            link = document.querySelector("#jsonlink")
+            link.innerHTML = '<a href="https://us-central1-canonn-api-236217.cloudfunctions.net/query/biostats/' + entryid + '" target="_blank">download json</a>'
+
             if ('content' in document.createElement('template') || len(entry) == 0) {
                 var tbody = document.querySelector("#container");
 
