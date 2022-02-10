@@ -2,6 +2,9 @@
 <html>
 
 <head>
+    <!--script src="assets/js/treemap-raphael.js"></script>
+    <script src="assets/js/treemap-squared-0.5.min.js"></script-->
+
     <!--link rel="stylesheet" href="site.css"-->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
@@ -93,6 +96,10 @@
             grid-area: stellar_histogram;
         }
 
+        .codex_atmosphere_histogram {
+            grid-area: atmosphere_histogram;
+        }
+
         .codex_planetary_histogram {
             grid-area: planetary_histogram;
         }
@@ -125,10 +132,10 @@
             display: grid;
             grid-template-areas:
                 'header header header header header header'
-                'region distance_value gravity_value gravity_value gravity_value gravity_value'
-                'region temperature_value pressure_value pressure_value pressure_value pressure_value'
-                'material_list material_list material_list planetary_histogram planetary_histogram planetary_histogram'
-                'stellar_histogram stellar_histogram stellar_histogram stellar_histogram stellar_histogram stellar_histogram'
+                'region distance_value gravity_value gravity_value gravity_value atmosphere_histogram'
+                'region temperature_value pressure_value pressure_value pressure_value atmosphere_histogram'
+                'material_list material_list material_list planetary_histogram planetary_histogram atmosphere_histogram'
+                'stellar_histogram stellar_histogram stellar_histogram stellar_histogram stellar_histogram atmosphere_histogram'
             ;
             grid-gap: 5px;
             background-color: black;
@@ -236,6 +243,7 @@
             <div class="codex_material_list">n/a</div>
             <div class="codex_stellar_histogram"></div>
             <div class="codex_planetary_histogram"></div>
+            <div class="codex_atmosphere_histogram"></div>
             <!--div class="codex_composition">XX</div>
             <div class="codex_composition_list">XX</div>
             <div class="codex_system_contents">XX</div>
@@ -1338,6 +1346,8 @@
                 submitentry()
             }
         })
+
+
     </script>
 
 
@@ -1505,6 +1515,9 @@
                         } else {
                             rect.setAttribute("class", "bar_g");
                         }
+
+                        title1.textContent = key + " " + value
+                        title2.textContent = key + " " + value
                         if (musthave.includes(key)) {
                             title1.textContent = "System must contain " + key + " " + value
                             title2.textContent = "System must contain " + key + " " + value
@@ -1748,6 +1761,61 @@
 
         }
 
+
+
+        function atmosphere(rowclone, param) {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            var target = rowclone.querySelector(".grid-container .codex_atmosphere_histogram");
+            data = param.histograms.atmos_types;
+            var maxval = 0
+
+            // get the bigest value
+            Object.keys(data).map(function (key) {
+                if (data[key] > maxval) {
+                    maxval = data[key]
+                }
+            });
+
+            // no construct our histogram
+            y = 0
+            Object.keys(data).map(function (key) {
+                width = (data[key] / maxval) * 100;
+                height = 20
+                g = document.createElementNS("http://www.w3.org/2000/svg", "g",);
+                rect = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
+                title = document.createElementNS("http://www.w3.org/2000/svg", "title",);
+                text = document.createElementNS("http://www.w3.org/2000/svg", "text",);
+
+                rect.setAttribute("rx", 3);
+                rect.setAttribute("ry", 3);
+                rect.setAttribute("x", 20);
+                rect.setAttribute("width", width);
+                rect.setAttribute("y", y);
+                rect.setAttribute("height", height);
+
+
+                text.setAttribute("x", width + 23);
+                text.setAttribute("y", y + 10);
+                text.textContent = key + " " + data[key].toLocaleString() + " bodies"
+                //text.setAttribute("width", 25)
+                //text.setAttribute("height", 25)
+                text.setAttribute("dominant-baseline", "middle")
+                text.setAttribute("text-anchor", "right")
+                text.setAttribute("dy", ".25em");
+
+                title.textContent = key + " " + data[key].toLocaleString() + " bodies"
+                g.setAttribute("class", "bar_s");
+                g.appendChild(rect);
+                g.appendChild(title);
+                g.appendChild(text);
+                svg.setAttribute("height", "100%")
+                svg.setAttribute("width", "100%")
+                svg.appendChild(g);
+                y = y + 21
+            });
+            target.appendChild(svg);
+        }
+
         function histogram(data, footer, tmin, tmax) {
             var template = document.querySelector('#histogram');
             var histogram = template.content.cloneNode(true);
@@ -1845,6 +1913,8 @@
 
                     if (huds.includes(hud_category)) {
 
+                        atmosphere(rowclone, value);
+
                         var gravity = rowclone.querySelector(".grid-container .codex_gravity_value");
                         gravity.textContent = ""
                         gravity.appendChild(histogram(value["histograms"]["gravity"], "Gravity", value["ming"], value["maxg"]));
@@ -1918,6 +1988,12 @@
                 document.querySelector(".nosuchsystem").innerText = "Sorry you need a modern browser"
                 document.querySelector(".nosuchsystem").style.display = "block"
             }
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    document.getElementById("logo").src = "img/Canonn-Logo_transparent_50_f1.gif";
+                    console.log('Initial rendering of LargeHTMLElement done');
+                });
+            });
             document.getElementById("logo").src = "img/Canonn-Logo_transparent_50_f1.gif";
         }
     </script>
