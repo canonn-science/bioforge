@@ -1903,8 +1903,9 @@
 
                     var header = rowclone.querySelector(".grid-container .codex_header");
                     header.textContent = entry[key]["name"];
+                    var maplink='<a href="https://map.canonn.tech/codex.html?english_name='+entry[key]["name"]+'"><img src="images/galaxy.png" alt="Canonn Galaxy Map" title="Canonn Galaxy Map"></a>'
                     if (entry[key]["reward"]) {
-                        header.textContent = entry[key]["name"] + " ($" + entry[key]["reward"].toLocaleString() + ")";
+                        header.innerHTML = entry[key]["name"] + " ($" + entry[key]["reward"].toLocaleString() + ") "+maplink;
                     }
 
                     hud_category = entry[key]["hud_category"]
