@@ -1110,7 +1110,7 @@
                 <rect id="Ruthenium" x="314" width="20" height="0" y="50"></rect>
                 <!--text x="5" y="322" dy=".35em">0 Ruthenium</text-->
             </g>
-            <g id="gt_Ruthenium" class="bar_v">
+            <g id="gt_Ruthenium" class="bar_r">
                 <title id="t2_Ruthenium">0 Ruthenium</title>
                 <rect id="rRuthenium" x="314" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
                     height="15" dominant-baseline="middle" text-anchor="middle" x="324" y="60" dy=".25em">Ru</text>
@@ -1903,9 +1903,9 @@
 
                     var header = rowclone.querySelector(".grid-container .codex_header");
                     header.textContent = entry[key]["name"];
-                    var maplink='<a href="https://map.canonn.tech/codex.html?english_name='+entry[key]["name"]+'"><img src="images/galaxy.png" alt="Canonn Galaxy Map" title="Canonn Galaxy Map"></a>'
+                    var maplink = '<a href="https://map.canonn.tech/codex.html?english_name=' + entry[key]["name"] + '"><img src="images/galaxy.png" alt="Canonn Galaxy Map" title="Canonn Galaxy Map"></a>'
                     if (entry[key]["reward"]) {
-                        header.innerHTML = entry[key]["name"] + " ($" + entry[key]["reward"].toLocaleString() + ") "+maplink;
+                        header.innerHTML = entry[key]["name"] + " ($" + entry[key]["reward"].toLocaleString() + ") " + maplink;
                     }
 
                     hud_category = entry[key]["hud_category"]
