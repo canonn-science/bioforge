@@ -1408,7 +1408,7 @@
 
         function getEntryInfo(entryid) {
             document.getElementById("logo").src = "img/Canonn-Logo_transparent_50.gif";
-            if (entryid === undefined || !isNaN(entryid)) {
+            if (entryid === undefined) {
                 document.querySelector(".nosuchsystem").innerText = "No such biology found"
                 document.querySelector(".nosuchsystem").style.display = "block"
             }
@@ -1859,7 +1859,16 @@
             return histogram;
         }
 
-        function makePage(entry, entryid) {
+        function makePage(data, entryid) {
+            // Check if entryid is a number
+            if (!isNaN(entryid)) {
+                // Set entry[entryid] to the current data
+                var entry = {};
+                entry[entryid] = data
+            } else {
+                var entry = data;
+            }
+
 
             link = document.querySelector("#jsonlink")
             link.innerHTML = '<a href="https://us-central1-canonn-api-236217.cloudfunctions.net/query/biostats/' + entryid + '" target="_blank">download json</a>'
