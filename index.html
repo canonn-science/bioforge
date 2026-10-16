@@ -1438,7 +1438,7 @@
 
         }
 
-        function planetary_histogram(rowclone, data, bodies, musthave) {
+        function planetary_histogram(rowclone, data, bodies, musthave, hostcounts) {
 
             var target = rowclone.querySelector(".grid-container .codex_planetary_histogram");
 
@@ -1512,10 +1512,18 @@
                             height = 0
 
                         }
+
+                        hostvalue = (hostcounts && hostcounts[key]) ? hostcounts[key] : 0
+                        hostheight = Math.round((hostvalue / maxvalue) * 50)
+                        nonhostvalue = value - hostvalue
+                        nonhostheight = Math.max(0, height - hostheight)
+
                         g1 = document.createElementNS("http://www.w3.org/2000/svg", "g",);
                         g2 = document.createElementNS("http://www.w3.org/2000/svg", "g",);
-                        rect = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
-                        title1 = document.createElementNS("http://www.w3.org/2000/svg", "title",);
+                        hostrect = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
+                        nonhostrect = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
+                        hosttitle = document.createElementNS("http://www.w3.org/2000/svg", "title",);
+                        nonhosttitle = document.createElementNS("http://www.w3.org/2000/svg", "title",);
                         title2 = document.createElementNS("http://www.w3.org/2000/svg", "title",);
                         label = document.createElementNS("http://www.w3.org/2000/svg", "rect",);
                         text = document.createElementNS("http://www.w3.org/2000/svg", "text",);
@@ -1526,28 +1534,37 @@
                             label.setAttribute("class", "bar_g");
                         }
 
-                        if (bodies.includes(key)) {
-                            rect.setAttribute("class", "bar_s");
+                        always = musthave.includes(key)
+                        hostclass = always ? "bar_r" : "bar_s"
+                        hostrect.setAttribute("class", hostclass);
+                        nonhostrect.setAttribute("class", "bar_g");
+
+                        hostlabel = always ? "System must contain " + key : key
+                        if (hostvalue > 0 && nonhostvalue > 0) {
+                            hosttitle.textContent = hostlabel + ": " + hostvalue + " of " + value + " host the biology (" + nonhostvalue + " in the same systems do not)"
+                            nonhosttitle.textContent = key + ": " + nonhostvalue + " of " + value + " in the same systems do not host the biology"
+                        } else if (hostvalue > 0) {
+                            hosttitle.textContent = hostlabel + ": " + value + " host the biology"
+                            nonhosttitle.textContent = ""
                         } else {
-                            rect.setAttribute("class", "bar_g");
+                            hosttitle.textContent = ""
+                            nonhosttitle.textContent = key + " " + value
                         }
+                        title2.textContent = hosttitle.textContent || nonhosttitle.textContent
 
-                        title1.textContent = key + " " + value
-                        title2.textContent = key + " " + value
-                        if (musthave.includes(key)) {
-                            title1.textContent = "System must contain " + key + " " + value
-                            title2.textContent = "System must contain " + key + " " + value
-                            rect.setAttribute("class", "bar_r");
-                        }
+                        nonhostrect.setAttribute("rx", 3);
+                        nonhostrect.setAttribute("ry", 3);
+                        nonhostrect.setAttribute("x", cols * 31);
+                        nonhostrect.setAttribute("width", 30);
+                        nonhostrect.setAttribute("y", 50 - height);
+                        nonhostrect.setAttribute("height", nonhostheight);
 
-
-
-                        rect.setAttribute("rx", 3);
-                        rect.setAttribute("ry", 3);
-                        rect.setAttribute("x", cols * 31);
-                        rect.setAttribute("width", 30);
-                        rect.setAttribute("y", 50 - height);
-                        rect.setAttribute("height", height);
+                        hostrect.setAttribute("rx", 3);
+                        hostrect.setAttribute("ry", 3);
+                        hostrect.setAttribute("x", cols * 31);
+                        hostrect.setAttribute("width", 30);
+                        hostrect.setAttribute("y", 50 - hostheight);
+                        hostrect.setAttribute("height", hostheight);
 
 
 
@@ -1569,8 +1586,10 @@
                         text.setAttribute("dy", ".25em");
                         text.textContent = tag
 
-                        g1.appendChild(rect);
-                        g1.appendChild(title1);
+                        nonhostrect.appendChild(nonhosttitle);
+                        hostrect.appendChild(hosttitle);
+                        g1.appendChild(nonhostrect);
+                        g1.appendChild(hostrect);
                         g2.appendChild(label);
                         g2.appendChild(title2);
                         g2.appendChild(text);
@@ -1924,7 +1943,7 @@
                     }
 
                     stellar_histogram(rowclone, value["histograms"]["system_bodies"], value["primaryStars"], localstars, value["systemBodyTypes"])
-                    planetary_histogram(rowclone, value["histograms"]["system_bodies"], localbodies, value["systemBodyTypes"])
+                    planetary_histogram(rowclone, value["histograms"]["system_bodies"], localbodies, value["systemBodyTypes"], value["histograms"]["body_types"])
 
                     var header = rowclone.querySelector(".grid-container .codex_header");
                     header.textContent = entry[key]["name"];
