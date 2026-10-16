@@ -171,6 +171,10 @@ function getEntryInfo(id) {
         renderIntro(container);
         return;
     }
+    // viewing a codex entry: offer a way back to the landing-page charts
+    var backbar = document.getElementById("backbar");
+    backbar.querySelector("a").href = window.location.pathname;
+    backbar.hidden = false;
     container.innerHTML = '<div class="loading-state"><span class="spinner"></span> Searching the codex for "' + escapeHtml(id) + '"...</div>';
     fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/biostats/" + id)
         .then(function (response) { return response.json(); })
@@ -199,7 +203,31 @@ function renderIntro(container) {
         "<p>Search for a species or codex entry to see where it's found: atmosphere &amp; body types, star types, " +
         "environmental ranges, common materials, and a galaxy map of matching regions and systems.</p>" +
         '<div class="intro-examples">' + buttons + "</div>" +
-        "</div>";
+        "</div>" +
+        '<div id="samples-root"><div class="loading-state"><span class="spinner"></span> Loading charts...</div></div>';
+    loadSamples();
+}
+
+/* The landing-page charts need d3, so load it (and js/samples.js) only when no entry is requested. */
+function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+        var el = document.createElement("script");
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = function () { reject(new Error("Could not load " + src)); };
+        document.head.appendChild(el);
+    });
+}
+
+function loadSamples() {
+    loadScript("https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js")
+        .then(function () { return loadScript("https://cdnjs.cloudflare.com/ajax/libs/d3-sankey/0.12.3/d3-sankey.min.js"); })
+        .then(function () { return loadScript("js/samples.js"); })
+        .catch(function (err) {
+            console.error(err);
+            var root = document.getElementById("samples-root");
+            if (root) root.innerHTML = '<div class="intro-card"><p>Charts could not be loaded: ' + escapeHtml(String(err)) + "</p></div>";
+        });
 }
 
 function runSearch(name) {
