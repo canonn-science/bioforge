@@ -48,6 +48,11 @@ def split_name(name):
     return genus, species, variant
 
 
+def dominant(counter):
+    """Most-sighted key of a {key: count} dict, or None if empty."""
+    return max(counter.items(), key=lambda kv: kv[1])[0] if counter else None
+
+
 def star_class(s):
     if not s or s == "null": return None
     for key, label in [("White Dwarf", "White Dwarf"), ("Wolf-Rayet", "Wolf-Rayet"), ("Neutron", "Neutron"),
@@ -103,7 +108,10 @@ def main():
                                                  if bodies >= MUST_MIN_BODIES and n / bodies >= MUST_SHARE}),
                         "f": sorted(named),
                         # codex ID suffix: a star class (K, TTS...), a material (Polonium) or a plain index (01)
-                        "k": re.split(r"[_;$]", e["fdevname"])[-3]})
+                        "k": re.split(r"[_;$]", e["fdevname"])[-3],
+                        # most-sighted host body type and atmosphere, for the tree-of-life "group by" views
+                        "bt": dominant(e["histograms"].get("body_types", {})),
+                        "at": dominant(e["histograms"].get("atmos_types", {})) or "No atmosphere"})
         species[g][s].append(e)
         genera[g].append(e)
 

@@ -13,8 +13,10 @@ var MARKUP =
     '<div class="samples">' +
     '<div class="kpis" id="kpis"></div>' +
     '<section class="story" id="s-tree"><h3>1 · The tree of life</h3>' +
-    '<p class="dek">Genus → species → colour variant, sized by confirmed sightings. Variants are painted in their actual in-game colour. ' +
-    'Click a genus ring to zoom in and click the background to zoom out. Click a genus name, species or variant to open its detail.</p>' +
+    '<p class="dek">Colour variant, sized by confirmed sightings and grouped however you like — by genus and species, by what its life is ' +
+    'tied to, by the host body it\'s usually found on, or by its usual atmosphere. Variants are painted in their actual in-game colour. ' +
+    'Click a ring to zoom in and click the background to zoom out. Click a name or variant to open its detail.</p>' +
+    '<div class="controls" id="tabs-tree"></div>' +
     '<div class="chart" id="c-tree"></div></section>' +
     '<section class="story" id="s-value"><h3>2 · Rare versus rewarding</h3>' +
     '<p class="dek">Each bubble is a species; click one to open it. Rarer species sit left, richer ones sit higher; bubble size is its number of colour variants. ' +
@@ -118,68 +120,188 @@ d3.json("data/samples.json").then(function (D) {
     /* ------------------------------------------------- 1. tree of life */
     function tree() {
         var W = 900, H = 900;
-        var root = { name: "Life", children: genusNames.map(function (g) {
-            var bySp = d3.group(D.entries.filter(function (e) { return e.g === g; }), function (e) { return e.s; });
-            return { name: g, genus: g, children: Array.from(bySp, function (kv) {
-                return { name: kv[0], genus: g, children: kv[1].map(function (e) {
-                    return { name: e.v || e.n, full: e.n, genus: g, value: e.c, reward: e.r };
-                }) };
-            }) };
-        }) };
-        var h = d3.hierarchy(root).sum(function (d) { return d.value || 0; }).sort(function (a, b) { return b.value - a.value; });
-        // sqrt the leaf sizes so rare variants stay visible beside Bacterium Aurasus
-        h.each(function (n) { if (!n.children) n.value = Math.sqrt(n.data.value || 0); });
-        h.eachAfter(function (n) { if (n.children) n.value = d3.sum(n.children, function (c) { return c.value; }); });
-        d3.pack().size([W, H]).padding(function (n) { return n.depth === 0 ? 8 : n.depth === 1 ? 6 : 1.5; })(h);
+
+        // What the codex ID suffix (entry.k) says a variant's life is tied to —
+        // mirrors bioforge.js's lifeKind(), collapsed to just the label.
+        var NEBULA_GENERA = ["Anemone", "Brain Tree", "Sinuous Tubers", "Bark Mounds"];
+        // star-class tags broken out individually rather than lumped as one
+        // "Stellar-based" bucket, same granularity as the per-material groups below
+        var STAR_LABEL = {
+            O: "O-type star", B: "B-type star", A: "A-type star", F: "F-type star", G: "G-type star",
+            K: "K-type star", M: "M-type red dwarf", L: "L brown dwarf", T: "T brown dwarf", Y: "Y brown dwarf",
+            D: "White dwarf", N: "Neutron star", W: "Wolf-Rayet star", TTS: "T Tauri star", Ae: "Herbig Ae/Be star"
+        };
+        var MAT_TAGS = { Carbon: 1, Phosphorus: 1, Sulphur: 1, Iron: 1, Nickel: 1, Vanadium: 1, Chromium: 1, Manganese: 1,
+            Zinc: 1, Germanium: 1, Arsenic: 1, Zirconium: 1, Niobium: 1, Molybdenum: 1, Cadmium: 1, Tin: 1, Tungsten: 1,
+            Mercury: 1, Selenium: 1, Yttrium: 1, Technetium: 1, Ruthenium: 1, Antimony: 1, Tellurium: 1, Polonium: 1 };
+        function lifeGroup(e) {
+            if (MAT_TAGS[e.k]) return "Material-based";
+            if (STAR_LABEL[e.k]) return "Stellar-based";
+            if (NEBULA_GENERA.indexOf(e.g) !== -1) return "Nebula-based";
+            return "General";
+        }
+        // only Stellar-/Material-based get a further ring inside their own
+        // circle (by star class / by element) — Nebula-based and General
+        // have nothing finer to split on, so this returns null for them.
+        function lifeSub(e) {
+            if (MAT_TAGS[e.k]) return e.k;
+            if (STAR_LABEL[e.k]) return STAR_LABEL[e.k];
+            return null;
+        }
+
+        var MODES = [
+            { id: "genus", label: "Genus", group: function (e) { return e.g; }, sub: function (e) { return e.s; } },
+            { id: "life", label: "Life basis", group: lifeGroup, sub: lifeSub },
+            { id: "body", label: "Host body", group: function (e) { return e.bt || "Unknown"; } },
+            { id: "atmo", label: "Atmosphere", group: function (e) { return e.at || "No atmosphere"; } }
+        ];
+
+        function leafNode(e) {
+            return { name: e.v || e.n, full: e.n, genus: e.g, value: e.c, reward: e.r };
+        }
+        function buildRoot(mode) {
+            var byGroup = d3.group(D.entries, mode.group);
+            var children = Array.from(byGroup, function (kv) {
+                var groupName = kv[0], es = kv[1];
+                var kids;
+                if (mode.sub) {
+                    // entries whose sub() comes back falsy skip the extra ring and
+                    // sit directly under the top-level group, next to its sub-rings
+                    var withSub = [], bare = [];
+                    es.forEach(function (e) { (mode.sub(e) ? withSub : bare).push(e); });
+                    var bySub = d3.group(withSub, mode.sub);
+                    kids = Array.from(bySub, function (skv) {
+                        return { name: skv[0], genus: groupName, children: skv[1].map(leafNode) };
+                    }).concat(bare.map(leafNode));
+                } else {
+                    kids = es.map(leafNode);
+                }
+                return { name: groupName, children: kids };
+            });
+            return { name: "Life", children: children };
+        }
 
         var svg = d3.select("#c-tree").append("svg").attr("viewBox", [0, 0, W, H]);
-        var g = svg.append("g");
+        var gRoot = svg.append("g");
         function leafFill(d) {
             var last = d.data.name.split(" ").pop();
             return VARIANT_COLOURS[d.data.name] || VARIANT_COLOURS[last] || genusColour(d.data.genus);
         }
-        var nodes = g.selectAll("a").data(h.descendants().slice(1)).join("a")
-            .attr("href", function (d) { return d.depth === 1 ? null : detail(d.depth === 2 ? d.data.name : d.data.full); })
-            .append("circle")
-            .attr("cx", function (d) { return d.x; }).attr("cy", function (d) { return d.y; })
-            .attr("r", function (d) { return d.r; })
-            .attr("fill", function (d) { return d.children ? "none" : leafFill(d); })
-            .attr("fill-opacity", 0.9)
-            .attr("pointer-events", function (d) { return d.children ? "all" : null; })
-            .attr("stroke", function (d) { return d.children ? (d.depth === 1 ? genusColour(d.data.genus) : "#3a4149") : "none"; })
-            .attr("stroke-width", function (d) { return d.depth === 1 ? 1.5 : 0.6; })
-            .attr("stroke-opacity", 0.8);
-        hover(nodes, function (d) {
-            if (d.children) {
-                var cnt = d3.sum(d.leaves(), function (l) { return l.data.value; });
-                return [d.data.name, fmt(cnt) + " sightings<br>" + d.leaves().length + " variants<br>" + (d.depth === 1 ? "Click to zoom" : "Click for detail")];
-            }
-            return [d.data.full, fmt(d.data.value) + " sightings<br>Reward " + money(d.data.reward) + "<br>Click for detail"];
-        });
-        var labels = g.selectAll("a.glabel").data(h.children).join("a").attr("class", "glabel")
-            .attr("href", function (d) { return detail(d.data.name); }).append("text")
-            .attr("x", function (d) { return d.x; }).attr("y", function (d) { return d.y - d.r - 4; })
-            .attr("text-anchor", "middle").attr("font-size", 12).attr("class", "lbl-strong")
-            .text(function (d) { return d.r > 22 ? d.data.name : ""; });
 
         var focus = [W / 2, H / 2, W];
         function zoomTo(v) {
             var k = W / v[2];
-            g.attr("transform", "translate(" + (W / 2 - v[0] * k) + "," + (H / 2 - v[1] * k) + ") scale(" + k + ")");
-            nodes.attr("stroke-width", function (d) { return (d.depth === 1 ? 1.5 : 0.6) / k; });
-            labels.attr("font-size", 12 / k);
+            gRoot.attr("transform", "translate(" + (W / 2 - v[0] * k) + "," + (H / 2 - v[1] * k) + ") scale(" + k + ")");
+            gRoot.selectAll("circle.ring").attr("stroke-width", function (d) { return (d.depth === 1 ? 1.5 : 0.6) / k; });
+            gRoot.selectAll("a.glabel text").attr("font-size", 12 / k);
         }
-        nodes.filter(function (d) { return d.depth === 1; }).style("cursor", "zoom-in").on("click", function (evt, d) {
-            evt.stopPropagation();
-            animate([d.x, d.y, d.r * 2.2]);
-        });
-        svg.on("click", function () { animate([W / 2, H / 2, W]); });
-        function animate(to) {
+        svg.on("click", function () { animateZoom([W / 2, H / 2, W]); });
+        function animateZoom(to) {
             var i = d3.interpolateZoom(focus, to);
             d3.transition().duration(i.duration).tween("zoom", function () {
                 return function (t) { focus = i(t); zoomTo(focus); };
             });
         }
+
+        var mode; // current MODES entry, set by render()
+        function keyFn(d) {
+            if (!d.children) return "leaf:" + d.data.full;
+            return "grp:" + mode.id + ":" + d.depth + ":" + (d.parent ? d.parent.data.name : "") + ":" + d.data.name;
+        }
+
+        function render(nextMode, animated) {
+            mode = nextMode;
+            var h = d3.hierarchy(buildRoot(mode)).sum(function (d) { return d.value || 0; })
+                .sort(function (a, b) { return b.value - a.value; });
+            // sqrt the leaf sizes so rare variants stay visible beside Bacterium Aurasus
+            h.each(function (n) { if (!n.children) n.value = Math.sqrt(n.data.value || 0); });
+            h.eachAfter(function (n) { if (n.children) n.value = d3.sum(n.children, function (c) { return c.value; }); });
+            d3.pack().size([W, H]).padding(function (n) { return n.depth === 0 ? 8 : n.depth === 1 ? 6 : 1.5; })(h);
+
+            // category rings (life/body/atmo) have no fixed genus identity of their
+            // own, so they get their own colour wheel; genus (and species, which
+            // inherit their parent genus) keep the one genus colour used everywhere else.
+            var ringNames = h.children.map(function (c) { return c.data.name; });
+            var ringColour = d3.scaleOrdinal().domain(ringNames)
+                .range(ringNames.map(function (_, i) { return d3.hcl((i * 360 / ringNames.length + 40) % 360, 55, 60).formatHex(); }));
+            function ringStroke(d) {
+                if (d.depth !== 1) return "#3a4149";
+                return mode.id === "genus" ? genusColour(d.data.genus) : ringColour(d.data.name);
+            }
+
+            var animDur = animated ? 750 : 0;
+            var ease = d3.easeCubicInOut;
+
+            var sel = gRoot.selectAll("a.node").data(h.descendants().slice(1), keyFn);
+
+            var exit = sel.exit();
+            exit.select("circle").transition().duration(animDur).ease(ease).attr("r", 1e-6);
+            exit.transition().delay(animDur).remove();
+
+            var enter = sel.enter().append("a").attr("class", "node")
+                .attr("href", function (d) { return d.children ? null : detail(d.data.full); });
+            enter.append("circle")
+                .attr("class", function (d) { return d.children ? "ring" : "leaf"; })
+                .attr("cx", function (d) { return d.x; }).attr("cy", function (d) { return d.y; })
+                .attr("r", 1e-6)
+                .attr("fill", function (d) { return d.children ? "none" : leafFill(d); })
+                .attr("fill-opacity", function (d) { return d.children ? null : 0.9; })
+                .attr("pointer-events", function (d) { return d.children ? "all" : null; })
+                .attr("stroke", ringStroke)
+                .attr("stroke-width", function (d) { return d.depth === 1 ? 1.5 : 0.6; })
+                .attr("stroke-opacity", 0.8);
+
+            var merged = enter.merge(sel);
+            merged.attr("href", function (d) { return d.children ? null : detail(d.data.full); });
+            merged.filter(function (d) { return d.children; }).select("circle").attr("stroke", ringStroke);
+            merged.select("circle").transition().duration(animDur).ease(ease)
+                .attr("cx", function (d) { return d.x; }).attr("cy", function (d) { return d.y; })
+                .attr("r", function (d) { return d.r; });
+
+            hover(merged, function (d) {
+                if (d.children) {
+                    var cnt = d3.sum(d.leaves(), function (l) { return l.data.value; });
+                    return [d.data.name, fmt(cnt) + " sightings<br>" + d.leaves().length + " variants<br>" + (d.depth === 1 ? "Click to zoom" : "Click for detail")];
+                }
+                return [d.data.full, fmt(d.data.value) + " sightings<br>Reward " + money(d.data.reward) + "<br>Click for detail"];
+            });
+
+            var rings = merged.filter(function (d) { return d.depth === 1; });
+            rings.style("cursor", "zoom-in").on("click", function (evt, d) {
+                evt.stopPropagation();
+                animateZoom([d.x, d.y, d.r * 2.2]);
+            });
+
+            var lblSel = gRoot.selectAll("a.glabel").data(h.children, function (d) { return "lbl:" + mode.id + ":" + d.data.name; });
+            lblSel.exit().select("text").transition().duration(animDur).attr("fill-opacity", 0);
+            lblSel.exit().transition().delay(animDur).remove();
+            var lblEnter = lblSel.enter().append("a").attr("class", "glabel")
+                .attr("href", function (d) { return mode.id === "genus" ? detail(d.data.name) : null; });
+            lblEnter.append("text")
+                .attr("x", function (d) { return d.x; }).attr("y", function (d) { return d.y - d.r - 4; })
+                .attr("text-anchor", "middle").attr("font-size", 12).attr("class", "lbl-strong")
+                .attr("fill-opacity", 0)
+                .text(function (d) { return d.r > 22 ? d.data.name : ""; });
+            var lblMerged = lblEnter.merge(lblSel);
+            lblMerged.select("text").text(function (d) { return d.r > 22 ? d.data.name : ""; })
+                .transition().duration(animDur).ease(ease)
+                .attr("x", function (d) { return d.x; }).attr("y", function (d) { return d.y - d.r - 4; })
+                .attr("fill-opacity", 1);
+
+            focus = [W / 2, H / 2, W];
+            zoomTo(focus);
+        }
+
+        var tabs = d3.select("#tabs-tree");
+        tabs.selectAll("button").data(MODES).join("button").text(function (d) { return d.label; })
+            .classed("on", function (d) { return d.id === MODES[0].id; })
+            .on("click", function (evt, d) {
+                if (mode === d) return;
+                tabs.selectAll("button").classed("on", function (b) { return b === d; });
+                render(d, true);
+            });
+
+        render(MODES[0], false);
     }
 
     /* ------------------------------------------------ 2. value scatter */
