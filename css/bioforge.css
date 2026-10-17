@@ -186,7 +186,8 @@ a:hover { text-decoration: underline; }
     margin-top: 14px;
 }
 
-.intro-examples button {
+.intro-examples .example {
+    position: relative;
     background: var(--panel-2);
     border: 1px solid var(--border);
     color: var(--text);
@@ -196,7 +197,41 @@ a:hover { text-decoration: underline; }
     cursor: pointer;
 }
 
-.intro-examples button:hover { border-color: var(--accent); color: var(--accent); }
+.intro-examples .example:hover,
+.intro-examples .example:focus-visible { border-color: var(--accent); color: var(--accent); text-decoration: none; outline: none; }
+
+/* CSS-only hover text explaining how the example search resolves */
+.intro-examples .example::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    width: 270px;
+    max-width: 80vw;
+    padding: 9px 12px;
+    background: var(--bg-0);
+    border: 1px solid var(--accent-dim);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: left;
+    white-space: normal;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 20;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .5);
+}
+
+.intro-examples .example:hover::after,
+.intro-examples .example:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
 
 .loading-state {
     display: flex;
@@ -303,6 +338,8 @@ a:hover { text-decoration: underline; }
     background: radial-gradient(circle at 100% 0%, rgba(248, 148, 6, 0.12), transparent 60%);
     pointer-events: none;
 }
+
+.stat[data-tip] { cursor: help; }
 
 .stat-value {
     display: block;
@@ -483,8 +520,35 @@ a:hover { text-decoration: underline; }
    vertical space once the chart is full-screen in the modal. */
 .panel-quad .donut-legend { display: none; }
 
+/* The region map decides the row height; the four chart panels split that height between
+   them (two rows). The charts keep their natural size: to make room the panel title floats
+   in the corner (the charts leave their corners empty) and the padding is tight. */
+.panel-quad {
+    contain: size; /* ignore the charts' natural size when sizing the row */
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+.panel-quad .panel { position: relative; min-height: 0; overflow: hidden; padding: 6px; }
+.panel-quad .panel h3 {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    margin: 0;
+    z-index: 1;
+    gap: 6px;
+    justify-content: flex-start;
+}
+.panel-quad .chart-target { min-height: 0; height: 100%; }
+/* only if the row is ever shorter than a chart: shrink it rather than clip it */
+.panel-quad .chart-target svg { max-width: 100%; max-height: 100%; }
+
 @media (max-width: 1000px) {
     .entry-row2 { grid-template-columns: 1fr; }
+    /* stacked layout: no map beside the charts to size against, so let them take their natural height */
+    .panel-quad { contain: none; }
+    .panel-quad .panel { padding: 12px 14px 14px; }
+    .panel-quad .panel h3 { position: static; margin: 0 0 8px; }
+    .panel-quad .chart-target { height: auto; }
+}
 }
 @media (max-width: 640px) {
     .panel-quad { grid-template-columns: 1fr; }
@@ -637,7 +701,7 @@ a:hover { text-decoration: underline; }
 
 circle.location-dot {
     fill: #ff3b3b;
-    fill-opacity: 0.55;
+    fill-opacity: 0.7;
     cursor: pointer;
 }
 

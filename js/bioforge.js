@@ -334,11 +334,21 @@ function buildMaterialsCube(target, value) {
     target.appendChild(legend);
 }
 
-var EXAMPLES = ["Bacterium", "Aleoida Arcus", "Concha Renibus", "Guardian Sentinel", "Thargoid Barnacle"];
+/* Each example doubles as a lesson in how the search works; the hover text explains what it resolves to. */
+var EXAMPLES = [
+    { term: "Radia", tip: "Partial words work. Every name containing \"radia\" matches, here the six Electricae Radialem colour variants." },
+    { term: "Maroon", tip: "Search a colour to compare it across species: 35 Maroon variants from many different genera." },
+    { term: "Squid,Globe", tip: "You can give a comma separated list of search terms and it will return everything that matches each search term: here the Squid Mollusc and Globe Mollusc clouds plus a Guardian site (13 entries)." },
+    { term: "Storm", tip: "A single keyword also finds non-biology codex entries, such as the Lagrange Storm Clouds." },
+    { term: "Nonhuman", tip: "Some searches are very specific: this finds just one entry, the Thargoid Nonhuman Signature." },
+    { term: "Guardian Beacon", tip: "Words are matched together as a phrase, so this returns the single Guardian Beacon entry rather than every Guardian site." },
+    { term: "Concha Labiata - Teal", tip: "Use a full species and colour name to open exactly one variant." },
+    { term: "Thargoid", tip: "A broad term returns the whole family: barnacles, interceptors, scavengers and more." }
+];
 
 function renderIntro(container) {
     var buttons = EXAMPLES.map(function (ex) {
-        return '<button onclick="runSearch(' + JSON.stringify(ex) + ')">' + escapeHtml(ex) + "</button>";
+        return '<a class="example" tabindex="0" href="?entryid=' + encodeURIComponent(ex.term) + '" data-tip="' + escapeHtml(ex.tip) + '">' + escapeHtml(ex.term) + "</a>";
     }).join("");
     container.innerHTML =
         '<div class="intro-card">' +
@@ -393,14 +403,27 @@ function setupRegionMap(wrap, svgElement) {
     var vb = full.slice(); // [x, y, w, h] — current view
     var MIN_SPAN = full[2] / 40; // deepest zoom: 1/40th of the galaxy width
     var MAX_SPAN = full[2]; // shallowest: full galaxy
+    var PIN_PX = 2; // system markers are always this many screen pixels in radius, whatever the zoom or map size
+
+    // SVG units per screen pixel for the current view (the map is square, so the shorter side governs)
+    function pinRadius() {
+        var box = svgElement.getBoundingClientRect();
+        var px = Math.min(box.width, box.height) || 500;
+        return PIN_PX * vb[2] / px;
+    }
 
     function apply() {
         svgElement.setAttribute("viewBox", vb.join(" "));
-        var s = full[2] / vb[2];
+        var r = pinRadius().toString();
         svgElement.querySelectorAll("circle.location-dot").forEach(function (c) {
-            c.setAttribute("r", (4 / s).toString());
+            c.setAttribute("r", r);
         });
     }
+
+    // fullscreen and window resizes change the pixel size of the map, so markers need re-sizing too
+    function onResize() { requestAnimationFrame(apply); }
+    window.addEventListener("resize", onResize);
+    document.addEventListener("fullscreenchange", onResize);
 
     function clamp(v) {
         v[2] = Math.min(MAX_SPAN, Math.max(MIN_SPAN, v[2]));
@@ -526,7 +549,7 @@ function setupRegionMap(wrap, svgElement) {
         '<span><i class="dot"></i>Individual system</span>';
     wrap.appendChild(legend);
 
-    return { zoomToRegion: zoomToRegion, zoomOut: reset, scale: function () { return full[2] / vb[2]; } };
+    return { zoomToRegion: zoomToRegion, zoomOut: reset, scale: function () { return full[2] / vb[2]; }, pinRadius: pinRadius };
 }
 
 function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory, systemsTarget) {
@@ -543,6 +566,7 @@ function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory, systems
             svgElement.appendChild(dotGroup);
 
             var seenSystems = {};
+            var seenCount = 0;
             var index = 0;
             var batchSize = 500;
             var interval = setInterval(function () {
@@ -555,7 +579,7 @@ function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory, systems
                     var cRegion = fields[6];
                     if (isNaN(x) || isNaN(z)) continue;
 
-                    seenSystems[name] = true;
+                    if (!seenSystems[name]) { seenSystems[name] = true; seenCount++; }
 
                     var regionEl = svgElement.getElementById("Region_" + cRegion.padStart(2, "0"));
                     if (regionEl) regionEl.classList.add("region_selected");
@@ -564,10 +588,9 @@ function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory, systems
                     var tz = (z + 24105) * 83 / 4096;
                     addPin(dotGroup, svgElement, mapCtl, tx, 2048 - tz, name);
                 }
-                if (index >= lines.length) {
-                    clearInterval(interval);
-                    if (systemsTarget) countUp(systemsTarget, Object.keys(seenSystems).length, { duration: 900 });
-                }
+                // keep the Systems stat in step with the pins as they are drawn
+                if (systemsTarget) systemsTarget.textContent = seenCount.toLocaleString();
+                if (index >= lines.length) clearInterval(interval);
             }, 0);
         })
         .catch(function (err) { console.warn("No per-system coordinates for this entry:", err); });
@@ -578,7 +601,7 @@ function addPin(parent, svgElement, mapCtl, x, y, name) {
     var circle = document.createElementNS(svgns, "circle");
     circle.setAttribute("cx", x);
     circle.setAttribute("cy", y);
-    circle.setAttribute("r", (4 / mapCtl.scale()).toString());
+    circle.setAttribute("r", mapCtl.pinRadius().toString());
     circle.classList.add("location-dot");
     parent.appendChild(circle);
 
@@ -613,14 +636,15 @@ function addPin(parent, svgElement, mapCtl, x, y, name) {
 
 function buildStats(rowclone, value, bodyTypeCount) {
     var target = rowclone.querySelector(".codex_stats");
+    var allRegions = (value["regions"] || []).length >= Object.keys(regions).length; // seen in every galactic region
     var stats = [
-        { label: "Bodies", value: value["count"] || 0 },
+        { label: "Sightings", value: value["count"] || 0, tip: sightingsNote(sumValues(value["histograms"]["body_types"]), value["count"]) },
         { label: "Systems", value: 0, cls: "codex_systems_value" },
-        { label: "Regions", value: (value["regions"] || []).length },
+        { label: "Regions", value: (value["regions"] || []).length, prefix: allRegions ? "All " : "" },
         { label: "Body types", value: bodyTypeCount },
     ];
     var html = stats.map(function (s) {
-        return '<div class="stat"><span class="stat-value ' + (s.cls || "") + '">0</span><span class="stat-label">' + escapeHtml(s.label) + "</span></div>";
+        return '<div class="stat"' + (s.tip ? ' data-tip="' + escapeHtml(s.tip) + '"' : "") + '><span class="stat-value ' + (s.cls || "") + '">0</span><span class="stat-label">' + escapeHtml(s.label) + "</span></div>";
     }).join("");
     if (value["reward"]) {
         html += '<div class="stat reward"><span class="stat-value">$0</span><span class="stat-label">Reward</span></div>';
@@ -721,12 +745,74 @@ function buildNicheRadar(rowclone, value) {
 
 var DONUT_COLORS = ["#f89406", "#ee5f5b", "#5bc0de", "#62c462", "#b66dff", "#9aa3ad", "#ffd166", "#06d6a0"];
 
+/* A codex entry's `count` is every sighting, but the body-level histograms (atmosphere, body type,
+   volcanism) only cover sightings where the body's details were recorded. The difference is shown as
+   its own slice so every donut adds up to the sighting count. */
+var UNRECORDED_KEY = "Body data unrecorded";
+var UNRECORDED_COLOR = "#4a535e";
+
+function sumValues(obj) {
+    return Object.keys(obj || {}).reduce(function (a, k) { return a + obj[k]; }, 0);
+}
+
+function sightingsNote(recorded, count) {
+    if (!count) return "";
+    if (count > recorded) return recorded.toLocaleString() + " of " + count.toLocaleString() + " sightings have body data";
+    return "All " + count.toLocaleString() + " sightings have body data";
+}
+
+/* Put the note in the panel title's "?" hover (reusing the one that's already there, if any). */
+function addSightingsNote(target, note) {
+    var panel = target.closest(".panel");
+    var h3 = panel && panel.querySelector("h3");
+    if (!h3 || !note) return;
+    var info = h3.querySelector(".info");
+    if (!info) {
+        info = document.createElement("i");
+        info.className = "info";
+        info.textContent = "?";
+        h3.appendChild(info);
+    }
+    var prev = info.dataset.tip || info.title;
+    info.removeAttribute("title");
+    info.dataset.tip = (prev ? prev + ". " : "") + note;
+}
+
+/* Styled hover text for the "?" icons and hero stats: the same floating tooltip the charts use, so
+   it is never clipped by a panel. Static icons in the HTML template carry a native title; move those
+   over to data-tip when a row is built. */
+function upgradeTips(root) {
+    root.querySelectorAll(".info[title]").forEach(function (el) {
+        el.dataset.tip = el.getAttribute("title");
+        el.removeAttribute("title");
+    });
+}
+
+(function wireInfoTips() {
+    var sel = ".info[data-tip], .stat[data-tip]";
+    document.addEventListener("mouseover", function (e) {
+        var el = e.target.closest(sel);
+        if (el) showViz(e, "", escapeHtml(el.dataset.tip));
+    });
+    document.addEventListener("mousemove", function (e) {
+        if (e.target.closest(sel)) positionViz(e);
+    });
+    document.addEventListener("mouseout", function (e) {
+        var el = e.target.closest(sel);
+        if (el && !el.contains(e.relatedTarget)) hideViz();
+    });
+})();
+
 /* Shared animated donut: entries = [{key, value, mark?}], mark renders a
    star prefix in the legend (e.g. "system must always contain this type"). */
 function buildDonutChart(target, entries, opts) {
     opts = opts || {};
     entries = entries.filter(function (e) { return e.value > 0; }).sort(function (a, b) { return b.value - a.value; });
-    var total = entries.reduce(function (a, e) { return a + e.value; }, 0);
+    var recorded = entries.reduce(function (a, e) { return a + e.value; }, 0);
+    var gap = opts.count && opts.count > recorded ? opts.count - recorded : 0;
+    if (gap) entries.push({ key: UNRECORDED_KEY, value: gap, unrecorded: true }); // always last, whatever its size
+    var total = recorded + gap;
+    if (opts.count) addSightingsNote(target, sightingsNote(recorded, opts.count));
 
     target.innerHTML = "";
     if (!entries.length || !total) {
@@ -751,7 +837,7 @@ function buildDonutChart(target, entries, opts) {
     entries.forEach(function (e, i) {
         var frac = e.value / total;
         var len = frac * c;
-        var color = DONUT_COLORS[Math.min(i, DONUT_COLORS.length - 1)];
+        var color = e.unrecorded ? UNRECORDED_COLOR : DONUT_COLORS[Math.min(i, DONUT_COLORS.length - 1)];
 
         var ring = document.createElementNS(svgns, "circle");
         ring.setAttribute("cx", size / 2); ring.setAttribute("cy", size / 2); ring.setAttribute("r", r);
@@ -762,7 +848,9 @@ function buildDonutChart(target, entries, opts) {
         ring.setAttribute("stroke-dasharray", "0 " + c);
         ring.setAttribute("stroke-dashoffset", -offset);
         ring.style.transition = "stroke-dasharray .8s cubic-bezier(.2,.8,.2,1) " + (i * 120) + "ms, stroke-width .15s ease";
-        wireTooltip(ring, e.key, e.value.toLocaleString() + " " + (opts.unit || "bodies") + " (" + Math.round(frac * 100) + "%)" + (e.mark ? " · every matching system has one" : ""));
+        wireTooltip(ring, e.key, e.unrecorded
+            ? e.value.toLocaleString() + " sightings (" + Math.round(frac * 100) + "%) with no body details recorded"
+            : e.value.toLocaleString() + " " + (opts.unit || "bodies") + " (" + Math.round(frac * 100) + "%)" + (e.mark ? " · every matching system has one" : ""));
         svg.appendChild(ring);
 
         requestAnimationFrame(function () {
@@ -793,7 +881,7 @@ function buildDonutChart(target, entries, opts) {
 function buildDonut(rowclone, value) {
     var data = value["histograms"]["atmos_types"] || {};
     var entries = Object.keys(data).map(function (k) { return { key: k, value: data[k] }; });
-    buildDonutChart(rowclone.querySelector(".codex_donut"), entries, { emptyText: "No atmosphere data", unit: "bodies" });
+    buildDonutChart(rowclone.querySelector(".codex_donut"), entries, { emptyText: "No atmosphere data", unit: "bodies", count: value["count"] });
 }
 
 /* Body types a species actually hosts on — body_types is already scoped to
@@ -804,7 +892,7 @@ function buildBodyTypeDonut(rowclone, value) {
     var data = value["histograms"]["body_types"] || {};
     var musthave = value["systemBodyTypes"] || [];
     var entries = Object.keys(data).map(function (k) { return { key: k, value: data[k], mark: musthave.includes(k) }; });
-    buildDonutChart(rowclone.querySelector(".codex_planetary_histogram"), entries, { emptyText: "No host body data", unit: "bodies" });
+    buildDonutChart(rowclone.querySelector(".codex_planetary_histogram"), entries, { emptyText: "No host body data", unit: "bodies", count: value["count"] });
 }
 
 /* Volcanism (inner ring) — volcanic_body_types is keyed "<body type> -
@@ -829,7 +917,17 @@ function buildVolcanismDonut(rowclone, value) {
     });
     var volcTypes = Object.keys(volcTotals).filter(function (v) { return volcTotals[v] > 0; })
         .sort(function (a, b) { return volcTotals[b] - volcTotals[a]; });
-    var total = volcTypes.reduce(function (a, v) { return a + volcTotals[v]; }, 0);
+    var recorded = volcTypes.reduce(function (a, v) { return a + volcTotals[v]; }, 0);
+    var count = value["count"] || 0;
+    var gap = count > recorded ? count - recorded : 0;
+    var firstVolc = volcTypes[0]; // largest recorded type, used for the centre label
+    if (gap) { // the unrecorded slice sits last on both rings
+        volcTotals[UNRECORDED_KEY] = gap;
+        byVolc[UNRECORDED_KEY] = [{ key: UNRECORDED_KEY, value: gap }];
+        volcTypes.push(UNRECORDED_KEY);
+    }
+    var total = recorded + gap;
+    addSightingsNote(target, sightingsNote(recorded, count));
 
     target.innerHTML = "";
     if (!volcTypes.length || !total) {
@@ -847,6 +945,7 @@ function buildVolcanismDonut(rowclone, value) {
         btTotals[bt] = (btTotals[bt] || 0) + raw[k];
     });
     var btColor = {};
+    btColor[UNRECORDED_KEY] = UNRECORDED_COLOR;
     Object.keys(btTotals).sort(function (a, b) { return btTotals[b] - btTotals[a]; })
         .forEach(function (bt, i) { btColor[bt] = DONUT_COLORS[(i + 2) % DONUT_COLORS.length]; });
 
@@ -870,7 +969,8 @@ function buildVolcanismDonut(rowclone, value) {
     var fracCursor = 0;
     volcTypes.forEach(function (volc, i) {
         var frac = volcTotals[volc] / total;
-        var color = DONUT_COLORS[i % DONUT_COLORS.length];
+        var unrec = volc === UNRECORDED_KEY;
+        var color = unrec ? UNRECORDED_COLOR : DONUT_COLORS[i % DONUT_COLORS.length];
 
         var ring1 = document.createElementNS(svgns, "circle");
         ring1.setAttribute("cx", cx); ring1.setAttribute("cy", cy); ring1.setAttribute("r", r1);
@@ -881,7 +981,7 @@ function buildVolcanismDonut(rowclone, value) {
         ring1.setAttribute("stroke-dasharray", "0 " + c1);
         ring1.setAttribute("stroke-dashoffset", -fracCursor * c1);
         ring1.style.transition = "stroke-dasharray .8s cubic-bezier(.2,.8,.2,1) " + (i * 120) + "ms, stroke-width .15s ease";
-        wireTooltip(ring1, volc, volcTotals[volc].toLocaleString() + " bodies (" + Math.round(frac * 100) + "%)");
+        wireTooltip(ring1, volc, volcTotals[volc].toLocaleString() + (unrec ? " sightings (" : " bodies (") + Math.round(frac * 100) + "%)" + (unrec ? " with no body details recorded" : ""));
         svg.appendChild(ring1);
         (function (ring, targetLen) {
             requestAnimationFrame(function () {
@@ -909,7 +1009,7 @@ function buildVolcanismDonut(rowclone, value) {
             ring2.setAttribute("stroke-dasharray", "0 " + c2);
             ring2.setAttribute("stroke-dashoffset", -subCursor * c2);
             ring2.style.transition = "stroke-dasharray .8s cubic-bezier(.2,.8,.2,1) " + (i * 120 + j * 40) + "ms, stroke-width .15s ease";
-            wireTooltip(ring2, s.key + " · " + volc, s.value.toLocaleString() + " bodies");
+            wireTooltip(ring2, unrec ? UNRECORDED_KEY : s.key + " · " + volc, s.value.toLocaleString() + (unrec ? " sightings" : " bodies"));
             svg.appendChild(ring2);
             (function (ring, targetLen) {
                 requestAnimationFrame(function () {
@@ -917,7 +1017,7 @@ function buildVolcanismDonut(rowclone, value) {
                 });
             })(ring2, subFrac * c2);
 
-            if (!btLegendSeen[s.key]) {
+            if (!btLegendSeen[s.key] && !unrec) {
                 btLegendSeen[s.key] = true;
                 btLegend += '<span><i style="background:' + scolor + '"></i>' + escapeHtml(s.key) + "</span>";
             }
@@ -932,7 +1032,8 @@ function buildVolcanismDonut(rowclone, value) {
     wrap.appendChild(svg);
     var center = document.createElement("div");
     center.className = "donut-center";
-    center.innerHTML = '<span class="pct">' + Math.round((volcTotals[volcTypes[0]] / total) * 100) + '%</span><span class="lbl">' + escapeHtml(volcTypes[0]) + "</span>";
+    var lead = firstVolc || volcTypes[0];
+    center.innerHTML = '<span class="pct">' + Math.round((volcTotals[lead] / total) * 100) + '%</span><span class="lbl">' + escapeHtml(lead) + "</span>";
     wrap.appendChild(center);
     target.appendChild(wrap);
 
@@ -1237,6 +1338,7 @@ function makePage(data, rawEntryId) {
 
         var systemsTarget = rowclone.querySelector(".codex_systems_value");
 
+        upgradeTips(rowclone);
         if (beforeNode) container.insertBefore(rowclone, beforeNode); else container.appendChild(rowclone);
 
         var svgEl = regionTarget.querySelector("svg#galaxy");
