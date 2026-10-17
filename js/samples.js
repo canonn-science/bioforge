@@ -252,6 +252,11 @@ d3.json("data/samples.json").then(function (D) {
                 .attr("stroke-opacity", 0.8);
 
             var merged = enter.merge(sel);
+            // newly-entered rings land at the end of the DOM (after already-present
+            // leaves that are just updating position), which paints them on top and
+            // steals hover/click from the leaves they're supposed to contain — reorder
+            // so shallower nodes always sit behind deeper ones, parents before children.
+            merged.sort(function (a, b) { return a.depth - b.depth; });
             merged.attr("href", function (d) { return d.children ? null : detail(d.data.full); });
             merged.filter(function (d) { return d.children; }).select("circle").attr("stroke", ringStroke);
             merged.select("circle").transition().duration(animDur).ease(ease)
