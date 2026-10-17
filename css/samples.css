@@ -44,5 +44,4 @@
 .life-title a { color: var(--text); }
 .life-title a:hover { color: var(--accent); }
 .life-link { margin-left: auto; white-space: nowrap; font-size: 14px; }
-#backbar { max-width: 1400px; margin: 0 auto; padding: 0 16px; }
-.back-link { display: inline-block; margin: 14px 0 0; padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); font-size: 14px; }
+.back-link { display: inline-block; padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); font-size: 14px; white-space: nowrap; }

@@ -53,7 +53,9 @@ a:hover { text-decoration: underline; }
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 10px 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 10px 16px;
     background: rgba(8, 11, 15, 0.88);
     border-bottom: 1px solid var(--border);
     backdrop-filter: blur(8px);
@@ -245,6 +247,8 @@ a:hover { text-decoration: underline; }
     color: var(--text);
 }
 
+.entry-title-group { display: flex; align-items: center; gap: 12px; }
+
 .entry-meta {
     display: flex;
     gap: 8px;
@@ -268,20 +272,19 @@ a:hover { text-decoration: underline; }
 
 .chip.accent { color: var(--accent); border-color: var(--accent-dim); }
 .chip.reward { color: var(--green); border-color: #2f5a2f; }
+.chip-json { cursor: pointer; }
+.chip-json:hover { color: var(--accent); border-color: var(--accent-dim); }
 
 /* ---------- Hero summary ---------- */
 
 .hero {
-    display: grid;
-    grid-template-columns: 1.1fr 1fr 1fr;
-    gap: 14px;
-    padding: 18px 20px 4px;
+    padding: 18px 20px 14px;
 }
 
 .hero-stats {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
 }
 
 .stat {
@@ -321,31 +324,7 @@ a:hover { text-decoration: underline; }
     margin-top: 2px;
 }
 
-.hero-chart {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.hero-chart h4 {
-    align-self: flex-start;
-    margin: 0 0 4px;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-    color: var(--text-dim);
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.panel h3 .info,
-.hero-chart h4 .info {
+.panel h3 .info {
     width: 13px;
     height: 13px;
     border-radius: 50%;
@@ -396,16 +375,16 @@ a:hover { text-decoration: underline; }
 .donut-center .pct {
     display: block;
     font-family: var(--font-head);
-    font-size: 22px;
+    font-size: 32px;
     font-weight: 700;
     color: var(--text);
 }
 
 .donut-center .lbl {
     display: block;
-    font-size: 9px;
+    font-size: 11px;
     color: var(--text-dim);
-    max-width: 90px;
+    max-width: 130px;
     text-transform: uppercase;
     letter-spacing: .04em;
 }
@@ -428,10 +407,24 @@ a:hover { text-decoration: underline; }
 .donut-legend i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
 .donut-legend b { color: var(--text); font-family: var(--font-mono); margin-left: auto; }
 
-@media (max-width: 1000px) {
-    .hero { grid-template-columns: 1fr; }
-    .hero-stats { grid-template-columns: repeat(4, 1fr); }
+.donut-legend-outer { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.donut-legend-title { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); margin-bottom: 3px; }
+
+.colchart-scroll { width: 100%; overflow-x: auto; }
+.colchart-scroll svg { display: block; }
+
+
+.mat-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 10px;
 }
+.mat-legend span { display: flex; align-items: center; gap: 5px; }
+.mat-legend i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
 @media (max-width: 560px) {
     .hero-stats { grid-template-columns: repeat(2, 1fr); }
 }
@@ -449,16 +442,75 @@ a:hover { text-decoration: underline; }
     to { opacity: 1; transform: translateY(0); }
 }
 
+.entry-sentinel { height: 1px; }
+
 .bar_g, .bar_r, .bar_s, .bar_c, .bar_v, .bar {
     transition: fill .2s ease, height .5s cubic-bezier(.2, .8, .2, 1), y .5s cubic-bezier(.2, .8, .2, 1);
 }
 
-.entry-grid {
+.entry-row2 {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    align-items: start;
+    grid-template-columns: 5fr 7fr;
+    align-items: stretch;
     gap: 14px;
-    padding: 18px 20px 22px;
+    padding: 0 20px 14px;
+}
+
+.panel-quad {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 14px;
+}
+
+.panel-quad .panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.panel-quad .panel h3 { align-self: flex-start; }
+
+.panel-quad .chart-target {
+    flex: 1 1 auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Legends repeat what's already in the hover tooltips — only worth the
+   vertical space once the chart is full-screen in the modal. */
+.panel-quad .donut-legend { display: none; }
+
+@media (max-width: 1000px) {
+    .entry-row2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+    .panel-quad { grid-template-columns: 1fr; }
+}
+
+.entry-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 0 20px 22px;
+}
+
+.entry-row3 {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    align-items: stretch;
+    gap: 14px;
+}
+
+.entry-row3 .panel { display: flex; flex-direction: column; min-height: 300px; }
+.entry-row3 .chart-target { flex: 1 1 auto; width: 100%; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.entry-row3 .colchart-scroll { flex: 1 1 auto; width: 100%; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: visible; }
+.entry-row3 .colchart-scroll svg { width: 100%; height: 100%; }
+
+@media (max-width: 1000px) {
+    .entry-row3 { grid-template-columns: 1fr; }
 }
 
 .panel {
@@ -483,18 +535,13 @@ a:hover { text-decoration: underline; }
 
 .panel h3 .count { color: var(--accent); font-family: var(--font-mono); }
 
-.panel-map { grid-column: span 5; min-height: 320px; }
-.panel-planetary { grid-column: span 7; }
-.panel-stellar { grid-column: span 7; }
-.panel-envrow { grid-column: span 5; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.panel-materials { grid-column: span 12; }
+.panel-map { min-height: 320px; }
+.panel-envrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 
 .envmini h3 { font-size: 10px; }
 
-@media (max-width: 1000px) {
-    .panel-map, .panel-planetary, .panel-stellar, .panel-envrow, .panel-materials {
-        grid-column: span 12;
-    }
+@media (max-width: 640px) {
+    .panel-envrow { grid-template-columns: 1fr 1fr; }
 }
 
 /* ---------- Region map ---------- */
@@ -599,58 +646,6 @@ circle.location-dot:hover {
     fill-opacity: 0.9;
 }
 
-/* ---------- Type bar lists (body types / star types) ---------- */
-
-.typebar-list { display: flex; flex-direction: column; gap: 5px; padding: 2px 0; }
-
-.typebar-row {
-    display: grid;
-    grid-template-columns: 150px 1fr 48px;
-    align-items: center;
-    gap: 10px;
-}
-
-.typebar-label {
-    font-size: 11.5px;
-    color: var(--text-dim);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.typebar-label.always { color: var(--red); font-weight: 600; }
-
-.typebar-track {
-    display: flex;
-    height: 13px;
-    background: var(--bg-1);
-    border-radius: 3px;
-    overflow: hidden;
-    transition: width .6s cubic-bezier(.2, .8, .2, 1);
-    cursor: pointer;
-}
-
-.typebar-fill {
-    height: 100%;
-    transition: width .5s cubic-bezier(.2, .8, .2, 1);
-    flex: none;
-}
-
-.typebar-fill.host { background: var(--accent); }
-.typebar-fill.always { background: var(--red); }
-.typebar-fill.nonhost { background: var(--grey-fill); }
-
-.typebar-value {
-    text-align: right;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text);
-}
-
-@media (max-width: 560px) {
-    .typebar-row { grid-template-columns: 96px 1fr 40px; }
-    .typebar-label { font-size: 10.5px; }
-}
 
 /* ---------- Charts ---------- */
 
@@ -745,18 +740,47 @@ circle.location-dot:hover {
 }
 
 .chart-modal-body { display: flex; justify-content: center; overflow-x: auto; }
+
+/* The reparented chart-target becomes a grid: the chart fills the left
+   column at full size, and any legend(s) sit in a fixed-width column on the
+   right instead of stacking below and squeezing the chart shorter. */
+.chart-modal-body > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-auto-rows: min-content;
+    align-items: center;
+    gap: 12px 32px;
+    width: 100%;
+}
+
 .chart-modal-body .donut-wrap,
-.chart-modal-body > div { width: 100%; }
-.chart-modal-body:has(.codex_hist, svg.chart) { justify-content: flex-start; }
+.chart-modal-body .colchart-scroll {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    width: 100%;
+}
+
+.chart-modal-body .donut-legend,
+.chart-modal-body .mat-legend {
+    grid-column: 2;
+    align-self: center;
+    max-width: 260px;
+    max-height: 76vh;
+    overflow-y: auto;
+    margin: 0 !important;
+}
 
 /* Only the donut/radar charts have a real viewBox, so only they can scale
-   via height:auto — the materials/env histograms use a fixed-px coordinate
-   system with no viewBox and would collapse if forced the same way. */
+   via height:auto — the env histograms use a fixed-px coordinate system
+   with no viewBox and would collapse if forced the same way. */
 .chart-modal-body .codex_radar svg,
-.chart-modal-body .codex_donut svg {
-    width: 100% !important;
-    height: auto !important;
-    max-width: 620px;
+.chart-modal-body .codex_donut svg,
+.chart-modal-body .codex_planetary_histogram svg,
+.chart-modal-body .codex_volcanism svg {
+    width: 100%;
+    height: auto;
+    max-width: 640px;
+    max-height: 76vh;
     display: block;
     margin: 0 auto;
 }
@@ -764,24 +788,27 @@ circle.location-dot:hover {
 .chart-modal-body .radar-axis-label { font-size: 13px; }
 .chart-modal-body .donut-center .pct { font-size: 48px; }
 .chart-modal-body .donut-center .lbl { font-size: 14px; max-width: 160px; }
-.chart-modal-body .donut-legend { font-size: 15px; max-width: 560px; margin: 18px auto 0; gap: 8px; }
+.chart-modal-body .donut-legend { font-size: 15px; gap: 8px; }
 .chart-modal-body .donut-legend i { width: 10px; height: 10px; }
 
-/* These SVGs have no viewBox (fixed px coordinate system), so width/height
-   alone won't enlarge their content — scale the whole element instead and
-   reserve room below for the visually-expanded box. */
-.chart-modal-body .codex_hist,
+/* Star Types and the materials cube have real viewBoxes too, so they scale
+   the same width/height-driven way rather than the old fixed-px hack. */
+.chart-modal-body .codex_stellar_histogram svg,
+.chart-modal-body .codex_material_list svg {
+    width: 100%;
+    height: auto;
+    max-height: 76vh;
+}
+
+/* The env-mini sparklines (gravity/distance/temperature/pressure) have no
+   viewBox — a fixed-px coordinate system — so width/height alone won't
+   enlarge their content; scale the whole element instead. */
+.chart-modal-body:has(svg.chart) { justify-content: flex-start; }
 .chart-modal-body svg.chart {
     transform: scale(2.2);
     transform-origin: top left;
     margin: 10px 0 150px;
 }
-
-.chart-modal-body .typebar-list { gap: 10px; }
-.chart-modal-body .typebar-row { grid-template-columns: 280px 1fr 90px; gap: 16px; }
-.chart-modal-body .typebar-label { font-size: 15px; }
-.chart-modal-body .typebar-track { height: 24px; border-radius: 5px; }
-.chart-modal-body .typebar-value { font-size: 14px; }
 
 /* ---------- Shared tooltip ---------- */
 

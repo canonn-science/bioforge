@@ -191,6 +191,149 @@ function escapeHtml(s) {
     });
 }
 
+// What the codex ID suffix says the life form is tied to (star class, material, or neither)
+var STAR_LIFE = {
+    O: ["O-type star", "#9db4ff"], B: ["B-type star", "#aac0ff"], A: ["A-type star", "#cad8ff"],
+    F: ["F-type star", "#f8f7ff"], G: ["G-type star", "#fff4ea"], K: ["K-type star", "#ffd2a1"],
+    M: ["M-type red dwarf", "#ff9a6b"], L: ["L-type brown dwarf", "#b5651d"], T: ["T-type brown dwarf", "#8c4a1a"],
+    Y: ["Y-type brown dwarf", "#6b3a1a"], D: ["white dwarf", "#e6ecff"], N: ["neutron star", "#5bc0de"],
+    W: ["Wolf-Rayet star", "#b48cff"], TTS: ["T Tauri star", "#ff8fb1"], Ae: ["Herbig Ae/Be star", "#ff6fa8"]
+};
+
+// Surface materials this game actually spawns, grouped by rarity tier
+var MAT_RARITY = {
+    v: { label: "Very common", colour: "#5bc0de" }, c: { label: "Common", colour: "#62c462" },
+    s: { label: "Standard", colour: "#f89406" }, r: { label: "Rare", colour: "#ee5f5b" }
+};
+var MAT_GAME = {
+    Carbon: "v", Phosphorus: "v", Sulphur: "v", Iron: "v", Nickel: "v",
+    Vanadium: "c", Chromium: "c", Manganese: "c", Zinc: "c", Germanium: "c", Arsenic: "c", Zirconium: "c",
+    Niobium: "s", Molybdenum: "s", Cadmium: "s", Tin: "s", Tungsten: "s", Mercury: "s",
+    Selenium: "r", Yttrium: "r", Technetium: "r", Ruthenium: "r", Antimony: "r", Tellurium: "r", Polonium: "r"
+};
+
+// Genera with no star/material tag in their codex ID that, measured against the
+// galaxy's nebula catalogue, turned out to cluster far closer to a nebula than
+// star- or material-tagged species do (3-75% of sightings within 100ly, vs ~2-3%
+// for tagged species) — Amphora Plant and Crystalline Shards do NOT show this and
+// stay "General".
+var NEBULA_GENERA = ["Anemone", "Brain Tree", "Sinuous Tubers", "Bark Mounds"];
+
+function lifeKind(fdevname, name) {
+    var parts = fdevname ? fdevname.split(/[_;$]/) : [];
+    var k = parts.length >= 3 ? parts[parts.length - 3] : null;
+    if (k && MAT_GAME.hasOwnProperty(k)) {
+        return { title: k + "-based life", colour: MAT_RARITY[MAT_GAME[k]].colour, note: "Needs " + k + " on its host body" };
+    }
+    if (k && STAR_LIFE[k]) {
+        return { title: "Stellar-based life", colour: STAR_LIFE[k][1], note: "Tied to a " + STAR_LIFE[k][0] };
+    }
+    if (name && NEBULA_GENERA.some(function (g) { return name.indexOf(g) !== -1; })) {
+        return { title: "Nebula-based life", colour: "#a78bfa", note: "Clusters close to a galactic nebula" };
+    }
+    return { title: "General life", colour: "#9aa3ad", note: "No material, star-class or nebula tie in its codex ID" };
+}
+
+// Short element symbols for the 25 in-game surface materials, in the same
+// common-to-rare order as MAT_GAME so a plain Object.keys() walk already
+// yields the right order for the rarity cube below.
+var MAT_SYMBOL = {
+    Carbon: "C", Phosphorus: "P", Sulphur: "S", Iron: "Fe", Nickel: "Ni",
+    Vanadium: "V", Chromium: "Cr", Manganese: "Mn", Zinc: "Zn", Germanium: "Ge", Arsenic: "As", Zirconium: "Zr",
+    Niobium: "Nb", Molybdenum: "Mo", Cadmium: "Cd", Tin: "Sn", Tungsten: "W", Mercury: "Hg",
+    Selenium: "Se", Yttrium: "Y", Technetium: "Tc", Ruthenium: "Ru", Antimony: "Sb", Tellurium: "Te", Polonium: "Po"
+};
+var MAT_CUBE_ORDER = Object.keys(MAT_GAME); // 25 materials, common -> rare
+
+/* Materials panel as a rarity cube: the 25 in-game surface materials laid out
+   5x5, common (top-left) to rare (bottom-right). Tile colour = rarity tier,
+   fill = must-have (on virtually every body) vs may-have vs never. */
+function buildMaterialsCube(target, value) {
+    var matHist = value["histograms"]["materials"] || {};
+    var bodyTotal = Object.keys(value["histograms"]["body_types"] || {}).reduce(function (a, k) {
+        return a + value["histograms"]["body_types"][k];
+    }, 0) || 1;
+    var mustHave = {};
+    (value["materials"] || []).forEach(function (k) { mustHave[k] = 1; });
+    var fdevParts = value["fdevname"] ? value["fdevname"].split(/[_;$]/) : [];
+    var fdevTag = fdevParts.length >= 3 ? fdevParts[fdevParts.length - 3] : null;
+    var named = fdevTag && MAT_GAME.hasOwnProperty(fdevTag) ? fdevTag : null;
+
+    function status(name) {
+        if (mustHave[name]) return "must";
+        return matHist[name] ? "may" : "none";
+    }
+
+    target.innerHTML = "";
+    var cols = 5, c = 68, W = cols * c + 20, H = Math.ceil(MAT_CUBE_ORDER.length / cols) * c + 20;
+    var svgns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgns, "svg");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("width", W);
+    svg.setAttribute("height", H);
+
+    MAT_CUBE_ORDER.forEach(function (name, i) {
+        var st = status(name);
+        var rarity = MAT_RARITY[MAT_GAME[name]];
+        var colour = rarity.colour;
+        var col = i % cols, row = Math.floor(i / cols);
+
+        var g = document.createElementNS(svgns, "g");
+        g.setAttribute("transform", "translate(" + (10 + col * c) + "," + (10 + row * c) + ")");
+        g.style.cursor = "default";
+
+        var rect = document.createElementNS(svgns, "rect");
+        rect.setAttribute("width", c - 6); rect.setAttribute("height", c - 6); rect.setAttribute("rx", 7);
+        rect.setAttribute("fill", colour);
+        rect.setAttribute("fill-opacity", st === "must" ? 1 : st === "may" ? 0.35 : 0.2);
+        rect.setAttribute("stroke", st === "none" ? "var(--border)" : colour);
+        rect.setAttribute("stroke-width", st === "must" ? 0 : 1.5);
+        if (st === "may") rect.setAttribute("stroke-dasharray", "4 3");
+        g.appendChild(rect);
+
+        var sym = document.createElementNS(svgns, "text");
+        sym.setAttribute("x", (c - 6) / 2); sym.setAttribute("y", 30); sym.setAttribute("text-anchor", "middle");
+        sym.setAttribute("font-size", 18);
+        sym.setAttribute("fill", st === "must" ? "#0b0f15" : st === "none" ? "var(--text-dim)" : "var(--text)");
+        sym.textContent = MAT_SYMBOL[name];
+        g.appendChild(sym);
+
+        var count = matHist[name];
+        var pctText = document.createElementNS(svgns, "text");
+        pctText.setAttribute("x", (c - 6) / 2); pctText.setAttribute("y", 46); pctText.setAttribute("text-anchor", "middle");
+        pctText.setAttribute("font-size", 10);
+        pctText.setAttribute("fill", st === "must" ? "#0b0f15" : "var(--text-dim)");
+        pctText.textContent = count ? Math.round((count / bodyTotal) * 100) + "%" : "–";
+        g.appendChild(pctText);
+
+        if (named === name) {
+            var dot = document.createElementNS(svgns, "circle");
+            dot.setAttribute("cx", c - 18); dot.setAttribute("cy", 11); dot.setAttribute("r", 3.5);
+            dot.setAttribute("fill", "#fff"); dot.setAttribute("stroke", "#0b0f15");
+            g.appendChild(dot);
+        }
+
+        wireTooltip(g, name + " · " + rarity.label,
+            (st === "none" ? "Never seen with this species"
+                : st === "must" ? "Must have: on virtually every body"
+                    : "May have: sometimes present") +
+            (count ? "<br>" + count.toLocaleString() + " of its bodies" : ""));
+        svg.appendChild(g);
+    });
+
+    var wrap = document.createElement("div");
+    wrap.className = "colchart-scroll";
+    wrap.appendChild(svg);
+    target.appendChild(wrap);
+
+    var legend = document.createElement("div");
+    legend.className = "mat-legend";
+    legend.innerHTML = Object.keys(MAT_RARITY).map(function (k) {
+        return '<span><i style="background:' + MAT_RARITY[k].colour + '"></i>' + MAT_RARITY[k].label + "</span>";
+    }).join("");
+    target.appendChild(legend);
+}
+
 var EXAMPLES = ["Bacterium", "Aleoida Arcus", "Concha Renibus", "Guardian Sentinel", "Thargoid Barnacle"];
 
 function renderIntro(container) {
@@ -386,7 +529,7 @@ function setupRegionMap(wrap, svgElement) {
     return { zoomToRegion: zoomToRegion, zoomOut: reset, scale: function () { return full[2] / vb[2]; } };
 }
 
-function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory) {
+function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory, systemsTarget) {
     if (!numericEntryId || !hudCategory) return;
     var url = "https://storage.googleapis.com/canonn-downloads/dumpr/" + hudCategory + "/" + numericEntryId + ".csv";
 
@@ -399,6 +542,7 @@ function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory) {
             dotGroup.setAttribute("id", "dot-group");
             svgElement.appendChild(dotGroup);
 
+            var seenSystems = {};
             var index = 0;
             var batchSize = 500;
             var interval = setInterval(function () {
@@ -411,6 +555,8 @@ function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory) {
                     var cRegion = fields[6];
                     if (isNaN(x) || isNaN(z)) continue;
 
+                    seenSystems[name] = true;
+
                     var regionEl = svgElement.getElementById("Region_" + cRegion.padStart(2, "0"));
                     if (regionEl) regionEl.classList.add("region_selected");
 
@@ -418,7 +564,10 @@ function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory) {
                     var tz = (z + 24105) * 83 / 4096;
                     addPin(dotGroup, svgElement, mapCtl, tx, 2048 - tz, name);
                 }
-                if (index >= lines.length) clearInterval(interval);
+                if (index >= lines.length) {
+                    clearInterval(interval);
+                    if (systemsTarget) countUp(systemsTarget, Object.keys(seenSystems).length, { duration: 900 });
+                }
             }, 0);
         })
         .catch(function (err) { console.warn("No per-system coordinates for this entry:", err); });
@@ -465,12 +614,13 @@ function addPin(parent, svgElement, mapCtl, x, y, name) {
 function buildStats(rowclone, value, bodyTypeCount) {
     var target = rowclone.querySelector(".codex_stats");
     var stats = [
-        { label: "Occurrences", value: value["count"] || 0 },
+        { label: "Bodies", value: value["count"] || 0 },
+        { label: "Systems", value: 0, cls: "codex_systems_value" },
         { label: "Regions", value: (value["regions"] || []).length },
         { label: "Body types", value: bodyTypeCount },
     ];
     var html = stats.map(function (s) {
-        return '<div class="stat"><span class="stat-value">0</span><span class="stat-label">' + escapeHtml(s.label) + "</span></div>";
+        return '<div class="stat"><span class="stat-value ' + (s.cls || "") + '">0</span><span class="stat-label">' + escapeHtml(s.label) + "</span></div>";
     }).join("");
     if (value["reward"]) {
         html += '<div class="stat reward"><span class="stat-value">$0</span><span class="stat-label">Reward</span></div>';
@@ -479,13 +629,14 @@ function buildStats(rowclone, value, bodyTypeCount) {
     target.innerHTML = html;
     var nodes = target.querySelectorAll(".stat-value");
     stats.forEach(function (s, i) {
+        if (s.cls) return; // filled in once its async source (region map pins) resolves
         countUp(nodes[i], s.value, { prefix: s.prefix || "", duration: 900 + i * 150 });
     });
 }
 
 /* Shared radar/spider chart: axes = [{label, norm (0..1), tooltip}]. */
 function buildRadarChart(target, axes) {
-    var size = 170, cx = size / 2, cy = size / 2, r = 44;
+    var size = 270, cx = size / 2, cy = size / 2, r = 73;
     var points = axes.map(function (ax, i) {
         var angle = -Math.PI / 2 + i * (Math.PI * 2 / axes.length);
         var norm = Math.max(0.06, ax.norm || 0);
@@ -583,7 +734,7 @@ function buildDonutChart(target, entries, opts) {
         return;
     }
 
-    var size = 150, r = 54, stroke = 14, c = 2 * Math.PI * r;
+    var size = 245, r = 88, stroke = 19, c = 2 * Math.PI * r;
     var svgns = "http://www.w3.org/2000/svg";
     var svg = document.createElementNS(svgns, "svg");
     svg.setAttribute("viewBox", "0 0 " + size + " " + size);
@@ -656,165 +807,274 @@ function buildBodyTypeDonut(rowclone, value) {
     buildDonutChart(rowclone.querySelector(".codex_planetary_histogram"), entries, { emptyText: "No host body data", unit: "bodies" });
 }
 
+/* Volcanism (inner ring) — volcanic_body_types is keyed "<body type> -
+   <volcanism type>"; stripping the body type and summing gives the inner
+   ring, same as before. Body types get an outer ring on top, aligned so a
+   volcanism type's body-type slices sit exactly under its own inner arc
+   rather than under the chart's overall 0-100% sweep. */
+function buildVolcanismDonut(rowclone, value) {
+    var target = rowclone.querySelector(".codex_volcanism");
+    var raw = value["histograms"]["volcanic_body_types"] || {};
+
+    // Split "<body type> - <volcanism type>" into a per-volcanism list of
+    // body-type counts, and roll up the volcanism totals for the inner ring.
+    var byVolc = {};
+    var volcTotals = {};
+    Object.keys(raw).forEach(function (k) {
+        var sep = k.indexOf(" - ");
+        if (sep === -1) return;
+        var bt = k.slice(0, sep), volc = k.slice(sep + 3), n = raw[k];
+        (byVolc[volc] || (byVolc[volc] = [])).push({ key: bt, value: n });
+        volcTotals[volc] = (volcTotals[volc] || 0) + n;
+    });
+    var volcTypes = Object.keys(volcTotals).filter(function (v) { return volcTotals[v] > 0; })
+        .sort(function (a, b) { return volcTotals[b] - volcTotals[a]; });
+    var total = volcTypes.reduce(function (a, v) { return a + volcTotals[v]; }, 0);
+
+    target.innerHTML = "";
+    if (!volcTypes.length || !total) {
+        target.innerHTML = '<p style="color:var(--text-dim);font-size:12px;margin:20px 0;">No volcanism data</p>';
+        return;
+    }
+
+    // Global colour per body type, ranked across the whole species so a
+    // given body type always gets the same colour regardless of which
+    // volcanism type it's under.
+    var btTotals = {};
+    Object.keys(raw).forEach(function (k) {
+        var sep = k.indexOf(" - ");
+        var bt = sep === -1 ? k : k.slice(0, sep);
+        btTotals[bt] = (btTotals[bt] || 0) + raw[k];
+    });
+    var btColor = {};
+    Object.keys(btTotals).sort(function (a, b) { return btTotals[b] - btTotals[a]; })
+        .forEach(function (bt, i) { btColor[bt] = DONUT_COLORS[(i + 2) % DONUT_COLORS.length]; });
+
+    var size = 270, cx = size / 2, cy = size / 2;
+    var r1 = 63, sw1 = 19, c1 = 2 * Math.PI * r1;
+    var r2 = 96, sw2 = 19, c2 = 2 * Math.PI * r2;
+    var svgns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgns, "svg");
+    svg.setAttribute("viewBox", "0 0 " + size + " " + size);
+    svg.setAttribute("width", size); svg.setAttribute("height", size);
+
+    [[r1, sw1], [r2, sw2]].forEach(function (ring) {
+        var bg = document.createElementNS(svgns, "circle");
+        bg.setAttribute("cx", cx); bg.setAttribute("cy", cy); bg.setAttribute("r", ring[0]);
+        bg.setAttribute("stroke-width", ring[1]);
+        bg.setAttribute("class", "donut-ring-bg");
+        svg.appendChild(bg);
+    });
+
+    var volcLegend = "", btLegend = "", btLegendSeen = {};
+    var fracCursor = 0;
+    volcTypes.forEach(function (volc, i) {
+        var frac = volcTotals[volc] / total;
+        var color = DONUT_COLORS[i % DONUT_COLORS.length];
+
+        var ring1 = document.createElementNS(svgns, "circle");
+        ring1.setAttribute("cx", cx); ring1.setAttribute("cy", cy); ring1.setAttribute("r", r1);
+        ring1.setAttribute("stroke-width", sw1);
+        ring1.setAttribute("stroke", color);
+        ring1.setAttribute("class", "donut-ring");
+        ring1.setAttribute("transform", "rotate(-90 " + cx + " " + cy + ")");
+        ring1.setAttribute("stroke-dasharray", "0 " + c1);
+        ring1.setAttribute("stroke-dashoffset", -fracCursor * c1);
+        ring1.style.transition = "stroke-dasharray .8s cubic-bezier(.2,.8,.2,1) " + (i * 120) + "ms, stroke-width .15s ease";
+        wireTooltip(ring1, volc, volcTotals[volc].toLocaleString() + " bodies (" + Math.round(frac * 100) + "%)");
+        svg.appendChild(ring1);
+        (function (ring, targetLen) {
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () { ring.setAttribute("stroke-dasharray", targetLen + " " + c1); });
+            });
+        })(ring1, frac * c1);
+        volcLegend += '<span><i style="background:' + color + '"></i>' + escapeHtml(volc) + "<b>" + Math.round(frac * 100) + "%</b></span>";
+
+        // Outer ring: this volcanism type's body-type split, confined to the
+        // exact same [fracCursor, fracCursor + frac) slice of the circle.
+        var subs = (byVolc[volc] || []).filter(function (s) { return s.value > 0; }).sort(function (a, b) { return b.value - a.value; });
+        var subTotal = subs.reduce(function (a, s) { return a + s.value; }, 0);
+        var subCursor = fracCursor;
+        subs.forEach(function (s, j) {
+            var subFrac = subTotal ? (s.value / subTotal) * frac : 0;
+            if (!subFrac) return;
+            var scolor = btColor[s.key];
+
+            var ring2 = document.createElementNS(svgns, "circle");
+            ring2.setAttribute("cx", cx); ring2.setAttribute("cy", cy); ring2.setAttribute("r", r2);
+            ring2.setAttribute("stroke-width", sw2);
+            ring2.setAttribute("stroke", scolor);
+            ring2.setAttribute("class", "donut-ring");
+            ring2.setAttribute("transform", "rotate(-90 " + cx + " " + cy + ")");
+            ring2.setAttribute("stroke-dasharray", "0 " + c2);
+            ring2.setAttribute("stroke-dashoffset", -subCursor * c2);
+            ring2.style.transition = "stroke-dasharray .8s cubic-bezier(.2,.8,.2,1) " + (i * 120 + j * 40) + "ms, stroke-width .15s ease";
+            wireTooltip(ring2, s.key + " · " + volc, s.value.toLocaleString() + " bodies");
+            svg.appendChild(ring2);
+            (function (ring, targetLen) {
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () { ring.setAttribute("stroke-dasharray", targetLen + " " + c2); });
+                });
+            })(ring2, subFrac * c2);
+
+            if (!btLegendSeen[s.key]) {
+                btLegendSeen[s.key] = true;
+                btLegend += '<span><i style="background:' + scolor + '"></i>' + escapeHtml(s.key) + "</span>";
+            }
+            subCursor += subFrac;
+        });
+
+        fracCursor += frac;
+    });
+
+    var wrap = document.createElement("div");
+    wrap.className = "donut-wrap";
+    wrap.appendChild(svg);
+    var center = document.createElement("div");
+    center.className = "donut-center";
+    center.innerHTML = '<span class="pct">' + Math.round((volcTotals[volcTypes[0]] / total) * 100) + '%</span><span class="lbl">' + escapeHtml(volcTypes[0]) + "</span>";
+    wrap.appendChild(center);
+    target.appendChild(wrap);
+
+    var legend = document.createElement("div");
+    legend.className = "donut-legend";
+    legend.innerHTML = volcLegend;
+    target.appendChild(legend);
+
+    if (btLegend) {
+        var legend2 = document.createElement("div");
+        legend2.className = "donut-legend donut-legend-outer";
+        legend2.innerHTML = '<span class="donut-legend-title">Body types (outer ring)</span>' + btLegend;
+        target.appendChild(legend2);
+    }
+}
+
 /* ---------------------------------------------------------------------- *
  * Charts
  * ---------------------------------------------------------------------- */
 
-/* Sorted horizontal bar list: only the types actually present, ranked by
-   count, full names, optional host/non-host stacked split. Much more
-   legible than a fixed grid of every possible type abbreviated to 2-3
-   letters, most of them empty. */
-function renderTypeBars(target, rows, stacked) {
+/* Vertical column chart: one bar per category, labelled on the x-axis.
+   rows = [{tag, fullName, value, always, plain, tip}], left to right in the
+   order given (callers sort/order rows themselves). */
+function renderColumnChart(target, rows) {
     target.innerHTML = "";
     if (!rows.length) {
         target.innerHTML = '<p style="color:var(--text-dim);font-size:12px;margin:10px 0;">No data</p>';
         return;
     }
     var maxvalue = Math.max.apply(Math, rows.map(function (r) { return r.value; }));
-    var list = document.createElement("div");
-    list.className = "typebar-list";
+    var colW = 40, barMaxH = 100, axisH = 28;
+    var W = rows.length * colW, H = barMaxH + axisH + 14;
 
-    rows.sort(function (a, b) { return b.value - a.value; }).forEach(function (r, i) {
-        var row = document.createElement("div");
-        row.className = "typebar-row";
+    var wrap = document.createElement("div");
+    wrap.className = "colchart-scroll";
+    var svgns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgns, "svg");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("width", W);
+    svg.setAttribute("height", H);
 
-        var label = document.createElement("div");
-        label.className = "typebar-label";
-        label.textContent = r.label;
-        if (r.always) label.classList.add("always");
+    rows.forEach(function (r, i) {
+        var h = maxvalue ? (r.value / maxvalue) * barMaxH : 0;
+        var displayH = r.value ? h : 2;
+        var cx = i * colW + colW / 2;
 
-        var track = document.createElement("div");
-        track.className = "typebar-track";
+        var bar = document.createElementNS(svgns, "rect");
+        bar.setAttribute("x", i * colW + 6);
+        bar.setAttribute("width", colW - 12);
+        bar.setAttribute("rx", 3);
+        bar.setAttribute("class", r.always ? "bar_r" : r.plain ? "bar_g" : "bar_s");
+        bar.setAttribute("fill-opacity", r.value ? 1 : 0.3);
+        // the bar_* classes above also style the env-mini sparklines that
+        // reuse them — set fill inline so it isn't silently lost to theirs.
+        bar.style.fill = r.always ? "var(--red)" : r.plain ? "var(--grey-fill)" : "var(--accent)";
+        svg.appendChild(bar);
+        growBar(bar, barMaxH, barMaxH - displayH, displayH);
 
-        var hostPct = r.value ? (r.hostValue / r.value) * 100 : 0;
+        var tag = document.createElementNS(svgns, "text");
+        tag.setAttribute("x", cx); tag.setAttribute("y", barMaxH + 16);
+        tag.setAttribute("text-anchor", "middle");
+        tag.setAttribute("font-size", 10);
+        tag.setAttribute("fill", r.always ? "var(--red)" : "var(--text-dim)");
+        tag.textContent = (r.always ? "★" : "") + r.tag;
+        svg.appendChild(tag);
 
-        var hostFill = document.createElement("div");
-        hostFill.className = "typebar-fill " + (r.always ? "always" : (r.plain ? "nonhost" : "host"));
-        hostFill.style.width = "0%";
-
-        var nonhostFill = document.createElement("div");
-        nonhostFill.className = "typebar-fill nonhost";
-        nonhostFill.style.width = "0%";
-
-        track.appendChild(hostFill);
-        if (stacked) track.appendChild(nonhostFill);
-        track.style.width = "0%";
-
-        var value = document.createElement("div");
-        value.className = "typebar-value";
-        value.textContent = r.value.toLocaleString();
-
-        row.appendChild(label);
-        row.appendChild(track);
-        row.appendChild(value);
-        list.appendChild(row);
-
-        if (r.hostTip) wireTooltip(hostFill, r.label, r.hostTip); else if (r.tip) wireTooltip(hostFill, r.label, r.tip);
-        if (r.nonhostTip) wireTooltip(nonhostFill, r.label, r.nonhostTip);
-        wireTooltip(track, r.label, r.tip || (r.value.toLocaleString() + " in matching systems"));
-
-        requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-                track.style.transitionDelay = (i * 25) + "ms";
-                track.style.width = (maxvalue ? (r.value / maxvalue) * 100 : 0) + "%";
-                hostFill.style.width = (stacked ? hostPct : 100) + "%";
-                if (stacked) nonhostFill.style.width = (100 - hostPct) + "%";
-            });
-        });
+        wireTooltip(bar, r.fullName, r.tip);
+        wireTooltip(tag, r.fullName, r.tip);
     });
-    target.appendChild(list);
+
+    wrap.appendChild(svg);
+    target.appendChild(wrap);
 }
 
+/* Star types a species is found around, as a column chart ordered along
+   the main sequence (OBAFGKM), continuing into the sub-stellar (LTY) and
+   post-main-sequence classes, with abbreviated spectral tags on the axis. */
 function stellar_histogram(rowclone, data, primarystars, localstars, musthave) {
     var target = rowclone.querySelector(".codex_stellar_histogram");
 
     var scaffold = {
-        "Stars": {
-            "Giant": [
-                { "name": "B (Blue-White super giant) Star", "tag": "B+" },
-                { "name": "A (Blue-White super giant) Star", "tag": "A+" },
-                { "name": "F (White super giant) Star", "tag": "F+" },
-                { "name": "G (White-Yellow super giant) Star", "tag": "G+" },
-                { "name": "K (Yellow-Orange giant) Star", "tag": "K+" },
-                { "name": "M (Red super giant) Star", "tag": "M+" },
-                { "name": "M (Red giant) Star", "tag": "M+" },
-            ],
-            "Scoopable": [
-                { "name": "O (Blue-White) Star", "tag": "O" },
-                { "name": "B (Blue-White) Star", "tag": "B" },
-                { "name": "A (Blue-White) Star", "tag": "A" },
-                { "name": "F (White) Star", "tag": "F" },
-                { "name": "G (White-Yellow) Star", "tag": "G" },
-                { "name": "K (Yellow-Orange) Star", "tag": "K" },
-                { "name": "M (Red dwarf) Star", "tag": "M" },
-            ],
-            "Other": [
-                { "name": "Supermassive Black Hole", "tag": "BH*" },
-                { "name": "Black Hole", "tag": "BH" },
-                { "name": "C Star", "tag": "C" },
-                { "name": "CJ Star", "tag": "CJ" },
-                { "name": "CN Star", "tag": "CN" },
-                { "name": "Herbig Ae/Be Star", "tag": "He" },
-                { "name": "MS-type Star", "tag": "MS" },
-                { "name": "Neutron Star", "tag": "N" },
-                { "name": "S-type Star", "tag": "S" },
-                { "name": "T Tauri Star", "tag": "TTS" },
-            ],
-            "White Dwarfs": [
-                { "name": "White Dwarf (D) Star", "tag": "D" },
-                { "name": "White Dwarf (DA) Star", "tag": "DA" },
-                { "name": "White Dwarf (DAB) Star", "tag": "DAB" },
-                { "name": "White Dwarf (DAV) Star", "tag": "DAV" },
-                { "name": "White Dwarf (DAZ) Star", "tag": "DAZ" },
-                { "name": "White Dwarf (DB) Star", "tag": "DB" },
-                { "name": "White Dwarf (DBV) Star", "tag": "DBV" },
-                { "name": "White Dwarf (DBZ) Star", "tag": "DBZ" },
-                { "name": "White Dwarf (DC) Star", "tag": "DC" },
-                { "name": "White Dwarf (DCV) Star", "tag": "DCV" },
-                { "name": "White Dwarf (DQ) Star", "tag": "DQ" },
-            ],
-            "Wolf-Rayet": [
-                { "name": "Wolf-Rayet C Star", "tag": "WC" },
-                { "name": "Wolf-Rayet N Star", "tag": "WN" },
-                { "name": "Wolf-Rayet NC Star", "tag": "WNC" },
-                { "name": "Wolf-Rayet O Star", "tag": "WO" },
-                { "name": "Wolf-Rayet Star", "tag": "WR" },
-            ],
-            "Brown Dwarfs": [
-                { "name": "L (Brown dwarf) Star", "tag": "L" },
-                { "name": "T (Brown dwarf) Star", "tag": "T" },
-                { "name": "Y (Brown dwarf) Star", "tag": "Y" },
-            ]
-        }
+        "Main sequence": [
+            { "name": "O (Blue-White) Star", "tag": "O" },
+            { "names": ["B (Blue-White) Star", "B (Blue-White super giant) Star"], "tag": "B" },
+            { "names": ["A (Blue-White) Star", "A (Blue-White super giant) Star"], "tag": "A" },
+            { "names": ["F (White) Star", "F (White super giant) Star"], "tag": "F" },
+            { "names": ["G (White-Yellow) Star", "G (White-Yellow super giant) Star"], "tag": "G" },
+            { "names": ["K (Yellow-Orange) Star", "K (Yellow-Orange giant) Star"], "tag": "K" },
+            { "names": ["M (Red dwarf) Star", "M (Red giant) Star", "M (Red super giant) Star"], "tag": "M" },
+        ],
+        "Brown Dwarfs": [
+            { "name": "L (Brown dwarf) Star", "tag": "L" },
+            { "name": "T (Brown dwarf) Star", "tag": "T" },
+            { "name": "Y (Brown dwarf) Star", "tag": "Y" },
+        ],
+        "White Dwarfs": [
+            { "names": ["White Dwarf (D) Star", "White Dwarf (DA) Star", "White Dwarf (DAB) Star",
+                "White Dwarf (DAV) Star", "White Dwarf (DAZ) Star", "White Dwarf (DB) Star",
+                "White Dwarf (DBV) Star", "White Dwarf (DBZ) Star", "White Dwarf (DC) Star",
+                "White Dwarf (DCV) Star", "White Dwarf (DQ) Star"], "tag": "D" },
+        ],
+        "Wolf-Rayet": [
+            { "names": ["Wolf-Rayet C Star", "Wolf-Rayet N Star", "Wolf-Rayet NC Star",
+                "Wolf-Rayet O Star", "Wolf-Rayet Star"], "tag": "WR" },
+        ],
+        "Other": [
+            { "name": "Neutron Star", "tag": "N" },
+            { "names": ["Black Hole", "Supermassive Black Hole"], "tag": "BH" },
+            { "name": "T Tauri Star", "tag": "TTS" },
+            { "name": "Herbig Ae/Be Star", "tag": "He" },
+            { "names": ["C Star", "CJ Star", "CN Star", "S-type Star", "MS-type Star"], "tag": "C" },
+        ]
     };
 
     var rows = [];
-    Object.keys(scaffold).forEach(function (type) {
-        Object.keys(scaffold[type]).forEach(function (subtype) {
-            scaffold[type][subtype].forEach(function (entry) {
-                var key = entry["name"];
-                var value = data[key] || 0;
-                if (!value) return;
+    Object.keys(scaffold).forEach(function (group) {
+        scaffold[group].forEach(function (entry) {
+            var keys = entry["names"] || [entry["name"]];
+            var value = keys.reduce(function (sum, k) { return sum + (data[k] || 0); }, 0);
+            var always = keys.some(function (k) { return musthave.includes(k); });
+            var isPrimary = keys.some(function (k) { return primarystars.includes(k); });
+            var isLocal = keys.some(function (k) { return localstars.includes(k); });
 
-                var always = musthave.includes(key);
-                var tip = value.toLocaleString();
-                if (primarystars.includes(key) && localstars.includes(key)) tip = "Primary & local · " + tip;
-                else if (primarystars.includes(key)) tip = "Primary star · " + tip;
-                else if (localstars.includes(key)) tip = "Local star · " + tip;
+            var tip = value ? value.toLocaleString() : "Not observed around this species";
+            if (value) {
+                if (isPrimary && isLocal) tip = "Primary & local · " + tip;
+                else if (isPrimary) tip = "Primary star · " + tip;
+                else if (isLocal) tip = "Local star · " + tip;
                 if (always) tip = "System must contain · " + tip;
+            }
 
-                rows.push({
-                    label: (always ? "★ " : "") + key,
-                    value: value,
-                    hostValue: value,
-                    always: always,
-                    plain: !(primarystars.includes(key) || localstars.includes(key)),
-                    tip: tip
-                });
+            rows.push({
+                tag: entry["tag"],
+                fullName: keys.join(" / "),
+                value: value,
+                always: always,
+                plain: !(isPrimary || isLocal),
+                tip: tip
             });
         });
     });
-    renderTypeBars(target, rows, false);
+    renderColumnChart(target, rows);
 }
 
 function histogram(data, footer, tmin, tmax) {
@@ -861,7 +1121,9 @@ function makePage(data, rawEntryId) {
     }
 
     var link = document.querySelector("#jsonlink");
-    link.innerHTML = '<a href="https://us-central1-canonn-api-236217.cloudfunctions.net/query/biostats/' + rawEntryId + '" target="_blank">download json</a>';
+    link.innerHTML = '<a class="chip chip-json" target="_blank" title="Download the raw API response for this search" ' +
+        'href="https://us-central1-canonn-api-236217.cloudfunctions.net/query/biostats/' + rawEntryId + '">' +
+        '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 1v8.6M8 9.6 5 6.6M8 9.6l3-3M2 11v2.5A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5V11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>JSON</a>';
 
     var container = document.getElementById("container");
     container.innerHTML = "";
@@ -873,19 +1135,19 @@ function makePage(data, rawEntryId) {
     }
 
     var regionmap = document.querySelector("#map");
-    var matschart = document.querySelector("#materials_chart");
     var row = document.querySelector("#row");
+    var keys = Object.keys(entry);
 
-    var i = 0;
-    for (var key in entry) {
-        if (!entry.hasOwnProperty(key)) continue;
-        var value = entry[key];
-
+    /* A genus like Bacterium can carry 100+ colour variants, each with its
+       own region-map SVG clone and set of charts — rendering them all at
+       once makes the page heavy and sluggish. Render the first couple
+       immediately, then render two more each time the sentinel at the
+       bottom scrolls into view. */
+    function renderEntry(key, value, localIndex, beforeNode) {
         var regionclone = regionmap.content.cloneNode(true);
         var rowclone = row.content.cloneNode(true);
-        var matsclone = matschart.content.cloneNode(true);
 
-        rowclone.querySelector(".entry").style.setProperty("--i", i++);
+        rowclone.querySelector(".entry").style.setProperty("--i", localIndex);
 
         (value.regions || []).forEach(function (x) {
             var id = regions[x];
@@ -901,15 +1163,42 @@ function makePage(data, rawEntryId) {
         var header = rowclone.querySelector(".codex_header");
         header.textContent = value["name"];
 
+        var hud_category = value["hud_category"];
+        var dot = rowclone.querySelector(".codex_life_dot");
+        var kindEl = rowclone.querySelector(".codex_life_kind");
+        if (hud_category === "Biology") {
+            var kind = lifeKind(value["fdevname"], value["name"]);
+            dot.style.background = kind.colour;
+            kindEl.innerHTML = '<b style="color:' + kind.colour + '">' + escapeHtml(kind.title) + "</b> &middot; " + escapeHtml(kind.note);
+        } else {
+            dot.remove();
+            kindEl.remove();
+        }
+
         var meta = rowclone.querySelector(".codex_meta");
         var metaHtml = '<span class="chip accent">' + escapeHtml(value["hud_category"] || "") + "</span>";
-        if (value["count"]) metaHtml += '<span class="chip">' + value["count"].toLocaleString() + " occurrences</span>";
-        if (value["regions"]) metaHtml += '<span class="chip">' + value["regions"].length + " regions</span>";
-        if (value["reward"]) metaHtml += '<span class="chip reward">$' + value["reward"].toLocaleString() + "</span>";
         metaHtml += '<a class="chip" target="_blank" href="https://map.canonn.tech/codex.html?english_name=' + encodeURIComponent(value["name"]) + '">Canonn Map ↗</a>';
         meta.innerHTML = metaHtml;
 
-        var hud_category = value["hud_category"];
+        var jsonLink = document.createElement("a");
+        jsonLink.className = "chip chip-json";
+        jsonLink.href = "#";
+        jsonLink.title = "Download this entry as JSON";
+        jsonLink.innerHTML = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 1v8.6M8 9.6 5 6.6M8 9.6l3-3M2 11v2.5A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5V11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>JSON';
+        jsonLink.addEventListener("click", function (e) {
+            e.preventDefault();
+            var blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = (value["name"] || "entry").replace(/[^a-z0-9]+/gi, "_") + ".json";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        });
+        meta.appendChild(jsonLink);
+
         var huds = ["Biology", "Guardian", "Thargoid"];
         var bodyTypeCount = Object.keys(value["histograms"]["body_types"] || {}).length;
         buildStats(rowclone, value, bodyTypeCount);
@@ -917,6 +1206,7 @@ function makePage(data, rawEntryId) {
         if (huds.includes(hud_category)) {
             buildDonut(rowclone, value);
             buildNicheRadar(rowclone, value);
+            buildVolcanismDonut(rowclone, value);
 
             var gravity = rowclone.querySelector(".codex_gravity_value");
             gravity.textContent = "";
@@ -934,41 +1224,9 @@ function makePage(data, rawEntryId) {
             pressure.textContent = "";
             pressure.appendChild(histogram(value["histograms"]["pressure"], "Pressure (Atmos)", value["minp"], value["maxp"]));
 
-            var mat_values = Object.keys(value["histograms"]["materials"]).map(function (k) {
-                return parseInt(value["histograms"]["materials"][k]);
-            });
-            var mat_max = Math.max.apply(Math, mat_values);
-            var common_mats = value["materials"];
-
-            Object.keys(value["histograms"]["materials"]).forEach(function (k) {
-                var mymat = matsclone.querySelector("#" + k);
-                var mymattitle = matsclone.querySelector("#t_" + k);
-                var gmymattitle = matsclone.querySelector("#gt_" + k);
-                var periodic = matsclone.querySelector("#gt_" + k + " #r" + k);
-                var myg = matsclone.querySelector("#g_" + k);
-                var myheight = Math.round((value["histograms"]["materials"][k] / mat_max) * 50);
-                var myvalue = value["histograms"]["materials"][k];
-
-                if (common_mats.includes(k)) {
-                    myg.setAttribute("class", gmymattitle.getAttribute("class"));
-                }
-                growBar(mymat, 50, 50 - myheight, myheight);
-                mymat.setAttribute("rx", 3);
-                mymat.setAttribute("ry", 3);
-                periodic.setAttribute("rx", 3);
-                periodic.setAttribute("ry", 3);
-
-                mymattitle.textContent = k + " " + myvalue;
-                var mymattitle2 = matsclone.querySelector("#t2_" + k);
-                mymattitle2.textContent = k + " " + myvalue;
-                wireTooltip(myg, k, myvalue.toLocaleString() + (common_mats.includes(k) ? " · common material" : ""));
-            });
-
-            var matdiv = rowclone.querySelector(".codex_material_list");
-            matdiv.textContent = "";
-            matdiv.appendChild(matsclone);
+            buildMaterialsCube(rowclone.querySelector(".codex_material_list"), value);
         } else {
-            rowclone.querySelectorAll(".hero-radar, .hero-donut, .panel-envrow, .panel-materials").forEach(function (p) {
+            rowclone.querySelectorAll(".panel-niche, .panel-atmosphere, .panel-volcanism, .panel-envrow, .panel-materials").forEach(function (p) {
                 p.style.display = "none";
             });
         }
@@ -977,13 +1235,46 @@ function makePage(data, rawEntryId) {
         regionTarget.textContent = "";
         regionTarget.appendChild(regionclone);
 
-        container.appendChild(rowclone);
+        var systemsTarget = rowclone.querySelector(".codex_systems_value");
+
+        if (beforeNode) container.insertBefore(rowclone, beforeNode); else container.appendChild(rowclone);
 
         var svgEl = regionTarget.querySelector("svg#galaxy");
         if (svgEl) {
             var mapCtl = setupRegionMap(regionTarget, svgEl);
-            plotSystemPins(svgEl, mapCtl, key, hud_category);
+            plotSystemPins(svgEl, mapCtl, key, hud_category, systemsTarget);
         }
+    }
+
+    var BATCH_SIZE = 2;
+    var cursor = 0;
+
+    var sentinel = document.createElement("div");
+    sentinel.className = "entry-sentinel";
+
+    function renderNextBatch() {
+        var end = Math.min(cursor + BATCH_SIZE, keys.length);
+        for (var localIndex = 0; cursor < end; cursor++, localIndex++) {
+            renderEntry(keys[cursor], entry[keys[cursor]], localIndex, sentinel.parentNode ? sentinel : null);
+        }
+        if (cursor >= keys.length && sentinel.parentNode) {
+            sentinel.remove();
+            if (scrollObserver) scrollObserver.disconnect();
+        }
+    }
+
+    var scrollObserver = null;
+    if (window.IntersectionObserver) {
+        scrollObserver = new IntersectionObserver(function (observed) {
+            if (observed[0].isIntersecting) renderNextBatch();
+        }, { rootMargin: "800px" });
+    }
+
+    renderNextBatch();
+    if (cursor < keys.length) {
+        container.appendChild(sentinel);
+        if (scrollObserver) scrollObserver.observe(sentinel);
+        else { while (cursor < keys.length) renderNextBatch(); } // no IO support: just render everything
     }
 
     resetLogo();

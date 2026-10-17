@@ -30,6 +30,7 @@
             <img id="logo" src="img/Canonn-Logo_transparent_50_f1.gif" alt="Canonn">
             <h1>Bioforge<small>Codex data explorer</small></h1>
         </div>
+        <div id="backbar" hidden><a class="back-link" href="./">&larr; Back to charts</a></div>
         <div class="searchform">
             <input type="text" placeholder="Search a codex entry, e.g. Bacterium or Concha Renibus">
             <button onclick="submitentry()">Search</button>
@@ -45,8 +46,6 @@
 
     <div id="viz-tooltip"></div>
 
-    <div id="backbar" hidden><a class="back-link" href="./">&larr; Back to charts</a></div>
-
     <div id="container">
         <!-- content goes here-->
     </div>
@@ -54,44 +53,61 @@
     <template id="row">
         <section class="entry">
             <div class="entry-head">
-                <h2 class="codex_header"></h2>
+                <div class="entry-title-group">
+                    <span class="life-dot codex_life_dot"></span>
+                    <div>
+                        <h2 class="codex_header life-title"></h2>
+                        <div class="life-kind codex_life_kind"></div>
+                    </div>
+                </div>
                 <div class="entry-meta codex_meta"></div>
             </div>
 
             <div class="hero">
                 <div class="hero-stats codex_stats"></div>
-                <div class="hero-chart hero-radar zoomable">
-                    <h4>Niche Fingerprint <i class="info" title="Where this species' environmental readings tend to sit within their own min&ndash;max range, on each axis">?</i></h4>
-                    <div class="codex_radar chart-target"></div>
-                </div>
-                <div class="hero-chart hero-donut zoomable">
-                    <h4>Atmosphere</h4>
-                    <div class="codex_donut chart-target"></div>
-                </div>
             </div>
 
-            <div class="entry-grid">
+            <div class="entry-row2">
                 <div class="panel panel-map">
                     <h3>Region Map</h3>
                     <div class="codex_region map-wrap"></div>
                 </div>
-                <div class="panel panel-planetary zoomable">
-                    <h3>Host Body Types <i class="info" title="Body types this species actually hosts on &#8212; &#9733; marks a type every matching system must contain">?</i></h3>
-                    <div class="codex_planetary_histogram chart-target"></div>
+                <div class="panel-quad">
+                    <div class="panel panel-niche zoomable">
+                        <h3>Niche Fingerprint <i class="info" title="Where this species' environmental readings tend to sit within their own min&ndash;max range, on each axis">?</i></h3>
+                        <div class="codex_radar chart-target"></div>
+                    </div>
+                    <div class="panel panel-atmosphere zoomable">
+                        <h3>Atmosphere</h3>
+                        <div class="codex_donut chart-target"></div>
+                    </div>
+                    <div class="panel panel-planetary zoomable">
+                        <h3>Host Body Types <i class="info" title="Body types this species actually hosts on &#8212; &#9733; marks a type every matching system must contain">?</i></h3>
+                        <div class="codex_planetary_histogram chart-target"></div>
+                    </div>
+                    <div class="panel panel-volcanism zoomable">
+                        <h3>Volcanism</h3>
+                        <div class="codex_volcanism chart-target"></div>
+                    </div>
                 </div>
+            </div>
+
+            <div class="entry-grid">
                 <div class="panel panel-envrow">
                     <div class="panel envmini zoomable"><h3>Gravity</h3><div class="codex_gravity_value chart-target">n/a</div></div>
                     <div class="panel envmini zoomable"><h3>Distance (ls)</h3><div class="codex_distance_value chart-target">n/a</div></div>
                     <div class="panel envmini zoomable"><h3>Temperature</h3><div class="codex_temperature_value chart-target">n/a</div></div>
                     <div class="panel envmini zoomable"><h3>Pressure (Atmos)</h3><div class="codex_pressure_value chart-target">n/a</div></div>
                 </div>
-                <div class="panel panel-stellar zoomable">
-                    <h3>Star Types</h3>
-                    <div class="codex_stellar_histogram chart-target"></div>
-                </div>
-                <div class="panel panel-materials zoomable">
-                    <h3>Materials</h3>
-                    <div class="codex_material_list chart-target">n/a</div>
+                <div class="entry-row3">
+                    <div class="panel panel-stellar zoomable">
+                        <h3>Star Types</h3>
+                        <div class="codex_stellar_histogram chart-target"></div>
+                    </div>
+                    <div class="panel panel-materials zoomable">
+                        <h3>Materials</h3>
+                        <div class="codex_material_list chart-target"></div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -716,330 +732,6 @@
         </svg>
     </template>
 
-    <template id="materials_chart">
-        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="chart"
-            width="100%" height="100" role="img" id="all_mats">
-            <style>
-                text {
-                    fill: #555;
-                    font-size: small;
-                }
-
-                .bar_g {
-                    fill: lightgrey;
-
-                    transition: fill .3s ease;
-                    cursor: pointer;
-                    font-family: Helvetica, sans-serif;
-
-
-                }
-
-                .bar_r {
-                    fill: #ee5f5b;
-
-                    transition: fill .3s ease;
-                    cursor: pointer;
-                    font-family: Helvetica, sans-serif;
-
-
-                }
-
-                .bar_s {
-                    fill: #f89406;
-
-                    transition: fill .3s ease;
-                    cursor: pointer;
-                    font-family: Helvetica, sans-serif;
-
-
-                }
-
-                .bar_c {
-                    fill: #62c462;
-
-                    transition: fill .3s ease;
-                    cursor: pointer;
-                    font-family: Helvetica, sans-serif;
-
-
-                }
-
-                .bar_v {
-                    fill: #5bc0de;
-
-                    transition: fill .3s ease;
-                    cursor: pointer;
-                    font-family: Helvetica, sans-serif;
-
-
-                }
-
-                .bar {
-                    fill: #aaa;
-
-                    transition: fill .3s ease;
-                    cursor: pointer;
-                    font-family: Helvetica, sans-serif;
-
-
-                }
-            </style>
-            <g id="g_Antimony" class="bar_g">
-                <title id="t_Antimony">0 Antimony</title>
-                <rect id="Antimony" x="20" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="28" dy=".35em">0 Antimony</text-->
-            </g>
-            <g id="gt_Antimony" class="bar_r">
-                <title id="t2_Antimony">0 Antimony</title>
-                <rect id="rAntimony" x="20" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="30" y="60" dy=".25em">Sb</text>
-            </g>
-            <g id="g_Arsenic" class="bar_g">
-                <title id="t_Arsenic">0 Arsenic</title>
-                <rect id="Arsenic" x="41" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="49" dy=".35em">0 Arsenic</text-->
-            </g>
-            <g id="gt_Arsenic" class="bar_c">
-                <title id="t2_Arsenic">0 Arsenic</title>
-                <rect id="rArsenic" x="41" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="51" y="60" dy=".25em">As</text>
-            </g>
-            <g id="g_Cadmium" class="bar_g">
-                <title id="t_Cadmium">0 Cadmium</title>
-                <rect id="Cadmium" x="62" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="70" dy=".35em">0 Cadmium</text-->
-            </g>
-            <g id="gt_Cadmium" class="bar_s">
-                <title id="t2_Cadmium">0 Cadmium</title>
-                <rect id="rCadmium" x="62" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="72" y="60" dy=".25em">Cd</text>
-            </g>
-            <g id="g_Carbon" class="bar_g">
-                <title id="t_Carbon">0 Carbon</title>
-                <rect id="Carbon" x="83" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="91" dy=".35em">0 Carbon</text-->
-            </g>
-            <g id="gt_Carbon" class="bar_v">
-                <title id="t2_Carbon">0 Carbon</title>
-                <rect id="rCarbon" x="83" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="93" y="60" dy=".25em">C</text>
-            </g>
-            <g id="g_Chromium" class="bar_g">
-                <title id="t_Chromium">0 Chromium</title>
-                <rect id="Chromium" x="104" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="112" dy=".35em">0 Chromium</text-->
-            </g>
-            <g id="gt_Chromium" class="bar_c">
-                <title id="t2_Chromium">0 Chromium</title>
-                <rect id="rChromium" x="104" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="114" y="60" dy=".25em">Cr</text>
-            </g>
-            <g id="g_Germanium" class="bar_g">
-                <title id="t_Germanium">0 Germanium</title>
-                <rect id="Germanium" x="125" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="133" dy=".35em">0 Germanium</text-->
-            </g>
-            <g id="gt_Germanium" class="bar_c">
-                <title id="t2_Germanium">0 Germanium</title>
-                <rect id="rGermanium" x="125" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="135" y="60" dy=".25em">Ge</text>
-            </g>
-            <g id="g_Iron" class="bar_g">
-                <title id="t_Iron">0 Iron</title>
-                <rect id="Iron" x="146" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="154" dy=".35em">0 Iron</text-->
-            </g>
-            <g id="gt_Iron" class="bar_v">
-                <title id="t2_Iron">0 Iron</title>
-                <rect id="rIron" x="146" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15" height="15"
-                    dominant-baseline="middle" text-anchor="middle" x="156" y="60" dy=".25em">Fe</text>
-            </g>
-            <g id="g_Manganese" class="bar_g">
-                <title id="t_Manganese">0 Manganese</title>
-                <rect id="Manganese" x="167" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="175" dy=".35em">0 Manganese</text-->
-            </g>
-            <g id="gt_Manganese" class="bar_c">
-                <title id="t2_Manganese">0 Manganese</title>
-                <rect id="rManganese" x="167" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="177" y="60" dy=".25em">Mn</text>
-            </g>
-            <g id="g_Mercury" class="bar_g">
-                <title id="t_Mercury">0 Mercury</title>
-                <rect id="Mercury" x="188" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="196" dy=".35em">0 Mercury</text-->
-            </g>
-            <g id="gt_Mercury" class="bar_s">
-                <title id="t2_Mercury">0 Mercury</title>
-                <rect id="rMercury" x="188" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="198" y="60" dy=".25em">Hg</text>
-            </g>
-            <g id="g_Molybdenum" class="bar_g">
-                <title id="t_Molybdenum">0 Molybdenum</title>
-                <rect id="Molybdenum" x="209" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="217" dy=".35em">0 Molybdenum</text-->
-            </g>
-            <g id="gt_Molybdenum" class="bar_s">
-                <title id="t2_Molybdenum">0 Molybdenum</title>
-                <rect id="rMolybdenum" x="209" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="219" y="60" dy=".25em">Mo</text>
-            </g>
-            <g id="g_Nickel" class="bar_g">
-                <title id="t_Nickel">0 Nickel</title>
-                <rect id="Nickel" x="230" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="238" dy=".35em">0 Nickel</text-->
-            </g>
-            <g id="gt_Nickel" class="bar_v">
-                <title id="t2_Nickel">0 Nickel</title>
-                <rect id="rNickel" x="230" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="240" y="60" dy=".25em">Ni</text>
-            </g>
-            <g id="g_Niobium" class="bar_g">
-                <title id="t_Niobium">0 Niobium</title>
-                <rect id="Niobium" x="251" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="259" dy=".35em">0 Niobium</text-->
-            </g>
-            <g id="gt_Niobium" class="bar_s">
-                <title id="t2_Niobium">0 Niobium</title>
-                <rect id="rNiobium" x="251" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="261" y="60" dy=".25em">Nb</text>
-            </g>
-            <g id="g_Phosphorus" class="bar_g">
-                <title id="t_Phosphorus">0 Phosphorus</title>
-                <rect id="Phosphorus" x="272" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="280" dy=".35em">0 Phosphorus</text-->
-            </g>
-            <g id="gt_Phosphorus" class="bar_v">
-                <title id="t2_Phosphorus">0 Phosphorus</title>
-                <rect id="rPhosphorus" x="272" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="282" y="60" dy=".25em">P</text>
-            </g>
-            <g id="g_Polonium" class="bar_g">
-                <title id="t_Polonium">0 Polonium</title>
-                <rect id="Polonium" x="293" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="301" dy=".35em">0 Polonium</text-->
-            </g>
-            <g id="gt_Polonium" class="bar_r">
-                <title id="t2_Polonium">0 Polonium</title>
-                <rect id="rPolonium" x="293" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="303" y="60" dy=".25em">Po</text>
-            </g>
-            <g id="g_Ruthenium" class="bar_g">
-                <title id="t_Ruthenium">0 Ruthenium</title>
-                <rect id="Ruthenium" x="314" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="322" dy=".35em">0 Ruthenium</text-->
-            </g>
-            <g id="gt_Ruthenium" class="bar_r">
-                <title id="t2_Ruthenium">0 Ruthenium</title>
-                <rect id="rRuthenium" x="314" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="324" y="60" dy=".25em">Ru</text>
-            </g>
-            <g id="g_Selenium" class="bar_g">
-                <title id="t_Selenium">0 Selenium</title>
-                <rect id="Selenium" x="335" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="343" dy=".35em">0 Selenium</text-->
-            </g>
-            <g id="gt_Selenium" class="bar_r">
-                <title id="t2_Selenium">0 Selenium</title>
-                <rect id="rSelenium" x="335" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="345" y="60" dy=".25em">Se</text>
-            </g>
-            <g id="g_Sulphur" class="bar_g">
-                <title id="t_Sulphur">0 Sulphur</title>
-                <rect id="Sulphur" x="356" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="364" dy=".35em">0 Sulphur</text-->
-            </g>
-            <g id="gt_Sulphur" class="bar_v">
-                <title id="t2_Sulphur">0 Sulphur</title>
-                <rect id="rSulphur" x="356" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="366" y="60" dy=".25em">S</text>
-            </g>
-            <g id="g_Technetium" class="bar_g">
-                <title id="t_Technetium">0 Technetium</title>
-                <rect id="Technetium" x="377" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="385" dy=".35em">0 Technetium</text-->
-            </g>
-            <g id="gt_Technetium" class="bar_r">
-                <title id="t2_Technetium">0 Technetium</title>
-                <rect id="rTechnetium" x="377" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="387" y="60" dy=".25em">Tc</text>
-            </g>
-            <g id="g_Tellurium" class="bar_g">
-                <title id="t_Tellurium">0 Tellurium</title>
-                <rect id="Tellurium" x="398" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="406" dy=".35em">0 Tellurium</text-->
-            </g>
-            <g id="gt_Tellurium" class="bar_r">
-                <title id="t2_Tellurium">0 Tellurium</title>
-                <rect id="rTellurium" x="398" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="408" y="60" dy=".25em">Te</text>
-            </g>
-            <g id="g_Tin" class="bar_g">
-                <title id="t_Tin">0 Tin</title>
-                <rect id="Tin" x="419" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="427" dy=".35em">0 Tin</text-->
-            </g>
-            <g id="gt_Tin" class="bar_s">
-                <title id="t2_Tin">0 Tin</title>
-                <rect id="rTin" x="419" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15" height="15"
-                    dominant-baseline="middle" text-anchor="middle" x="429" y="60" dy=".25em">Sn</text>
-            </g>
-            <g id="g_Tungsten" class="bar_g">
-                <title id="t_Tungsten">0 Tungsten</title>
-                <rect id="Tungsten" x="440" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="448" dy=".35em">0 Tungsten</text-->
-            </g>
-            <g id="gt_Tungsten" class="bar_s">
-                <title id="t2_Tungsten">0 Tungsten</title>
-                <rect id="rTungsten" x="440" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="450" y="60" dy=".25em">W</text>
-            </g>
-            <g id="g_Vanadium" class="bar_g">
-                <title id="t_Vanadium">0 Vanadium</title>
-                <rect id="Vanadium" x="461" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="469" dy=".35em">0 Vanadium</text-->
-            </g>
-            <g id="gt_Vanadium" class="bar_c">
-                <title id="t2_Vanadium">0 Vanadium</title>
-                <rect id="rVanadium" x="461" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="471" y="60" dy=".25em">V</text>
-            </g>
-            <g id="g_Yttrium" class="bar_g">
-                <title id="t_Yttrium">0 Yttrium</title>
-                <rect id="Yttrium" x="482" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="490" dy=".35em">0 Yttrium</text-->
-            </g>
-            <g id="gt_Yttrium" class="bar_r">
-                <title id="t2_Yttrium">0 Yttrium</title>
-                <rect id="rYttrium" x="482" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="492" y="60" dy=".25em">Y</text>
-            </g>
-            <g id="g_Zinc" class="bar_g">
-                <title id="t_Zinc">0 Zinc</title>
-                <rect id="Zinc" x="503" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="511" dy=".35em">0 Zinc</text-->
-            </g>
-            <g id="gt_Zinc" class="bar_c">
-                <title id="t2_Zinc">0 Zinc</title>
-                <rect id="rZinc" x="503" width="20" height="20" y="53" rx="3" ry="3"></rect>
-                <text width="15" height="15" dominant-baseline="middle" text-anchor="middle" x="513" y="60"
-                    dy=".25em">Zn</text>
-            </g>
-            <g id="g_Zirconium" class="bar_g">
-                <title id="t_Zirconium">0 Zirconium</title>
-                <rect id="Zirconium" x="524" width="20" height="0" y="50"></rect>
-                <!--text x="5" y="532" dy=".35em">0 Zirconium</text-->
-            </g>
-            <g id="gt_Zirconium" class="bar_c">
-                <title id="t2_Zirconium">0 Zirconium</title>
-                <rect id="rZirconium" x="524" width="20" height="20" y="53" rx="3" ry="3"></rect><text width="15"
-                    height="15" dominant-baseline="middle" text-anchor="middle" x="534" y="60" dy=".25em">Zr</text>
-            </g>
-        </svg>
-    </template>
-
-
     <template id="histogram">
         <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="chart"
             width="100%" height="76" role="img" id="chart">
@@ -1131,7 +823,7 @@
     </template>
 
 
-    <script src="js/bioforge.js" defer></script>
+    <script src="js/bioforge.js?v=20261017c" defer></script>
 </body>
 
 </html>
