@@ -134,16 +134,24 @@ d3.json("data/samples.json").then(function (D) {
         var MAT_TAGS = { Carbon: 1, Phosphorus: 1, Sulphur: 1, Iron: 1, Nickel: 1, Vanadium: 1, Chromium: 1, Manganese: 1,
             Zinc: 1, Germanium: 1, Arsenic: 1, Zirconium: 1, Niobium: 1, Molybdenum: 1, Cadmium: 1, Tin: 1, Tungsten: 1,
             Mercury: 1, Selenium: 1, Yttrium: 1, Technetium: 1, Ruthenium: 1, Antimony: 1, Tellurium: 1, Polonium: 1 };
-        function lifeBasis(e) {
-            if (MAT_TAGS[e.k]) return e.k + "-based";
-            if (STAR_LABEL[e.k]) return STAR_LABEL[e.k];
+        function lifeGroup(e) {
+            if (MAT_TAGS[e.k]) return "Material-based";
+            if (STAR_LABEL[e.k]) return "Stellar-based";
             if (NEBULA_GENERA.indexOf(e.g) !== -1) return "Nebula-based";
             return "General";
+        }
+        // only Stellar-/Material-based get a further ring inside their own
+        // circle (by star class / by element) — Nebula-based and General
+        // have nothing finer to split on, so this returns null for them.
+        function lifeSub(e) {
+            if (MAT_TAGS[e.k]) return e.k;
+            if (STAR_LABEL[e.k]) return STAR_LABEL[e.k];
+            return null;
         }
 
         var MODES = [
             { id: "genus", label: "Genus", group: function (e) { return e.g; }, sub: function (e) { return e.s; } },
-            { id: "life", label: "Life basis", group: lifeBasis },
+            { id: "life", label: "Life basis", group: lifeGroup, sub: lifeSub },
             { id: "body", label: "Host body", group: function (e) { return e.bt || "Unknown"; } },
             { id: "atmo", label: "Atmosphere", group: function (e) { return e.at || "No atmosphere"; } }
         ];
@@ -157,10 +165,14 @@ d3.json("data/samples.json").then(function (D) {
                 var groupName = kv[0], es = kv[1];
                 var kids;
                 if (mode.sub) {
-                    var bySub = d3.group(es, mode.sub);
+                    // entries whose sub() comes back falsy skip the extra ring and
+                    // sit directly under the top-level group, next to its sub-rings
+                    var withSub = [], bare = [];
+                    es.forEach(function (e) { (mode.sub(e) ? withSub : bare).push(e); });
+                    var bySub = d3.group(withSub, mode.sub);
                     kids = Array.from(bySub, function (skv) {
                         return { name: skv[0], genus: groupName, children: skv[1].map(leafNode) };
-                    });
+                    }).concat(bare.map(leafNode));
                 } else {
                     kids = es.map(leafNode);
                 }
