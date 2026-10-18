@@ -552,12 +552,35 @@ function setupRegionMap(wrap, svgElement) {
     return { zoomToRegion: zoomToRegion, zoomOut: reset, scale: function () { return full[2] / vb[2]; }, pinRadius: pinRadius };
 }
 
-function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory, systemsTarget) {
-    if (!numericEntryId || !hudCategory) return;
-    var url = "https://storage.googleapis.com/canonn-downloads/dumpr/" + hudCategory + "/" + numericEntryId + ".csv";
+// Some dumpr CSV dumps aren't named after their numeric codex entry id;
+// map those entries' fdevname to the actual filename on disk.
+var DUMP_SLUG_OVERRIDES = {
+    "$POIScene_Wreckage_UA;": "nonhuman" // Thargoid Nonhuman Signature
+};
 
-    fetch(url)
-        .then(function (r) { return r.text(); })
+// The dumpr CSV dumps are refreshed infrequently server-side, but the bucket
+// only sets a 1-hour Cache-Control; stash the text in localStorage for a day
+// so repeat views of the same entry don't refetch it every hour.
+var DUMP_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+function fetchCsvCached(url) {
+    var cacheKey = "dumpr_cache:" + url;
+    try {
+        var cached = JSON.parse(localStorage.getItem(cacheKey));
+        if (cached && Date.now() - cached.t < DUMP_CACHE_TTL_MS) return Promise.resolve(cached.text);
+    } catch (e) { /* ignore unreadable/missing cache entry */ }
+
+    return fetch(url).then(function (r) { return r.text(); }).then(function (text) {
+        try { localStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), text: text })); } catch (e) { /* storage full/unavailable */ }
+        return text;
+    });
+}
+
+function plotSystemPins(svgElement, mapCtl, numericEntryId, hudCategory, systemsTarget, fdevname) {
+    if (!numericEntryId || !hudCategory) return;
+    var slug = DUMP_SLUG_OVERRIDES[fdevname] || numericEntryId;
+    var url = "https://storage.googleapis.com/canonn-downloads/dumpr/" + hudCategory + "/" + slug + ".csv";
+
+    fetchCsvCached(url)
         .then(function (csvText) {
             var lines = csvText.trim().split("\n");
             if (!lines.length || !lines[0]) return;
@@ -1344,7 +1367,7 @@ function makePage(data, rawEntryId) {
         var svgEl = regionTarget.querySelector("svg#galaxy");
         if (svgEl) {
             var mapCtl = setupRegionMap(regionTarget, svgEl);
-            plotSystemPins(svgEl, mapCtl, key, hud_category, systemsTarget);
+            plotSystemPins(svgEl, mapCtl, key, hud_category, systemsTarget, value["fdevname"]);
         }
     }
 
